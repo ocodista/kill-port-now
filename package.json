@@ -1,0 +1,47 @@
+{
+  "name": "kill-port-now",
+  "version": "0.1.0",
+  "description": "A tiny, zero-dependency, fast kill-port CLI.",
+  "license": "MIT",
+  "author": "Caio Borghi",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ocodista/kill-port-now.git"
+  },
+  "bugs": {
+    "url": "https://github.com/ocodista/kill-port-now/issues"
+  },
+  "homepage": "https://github.com/ocodista/kill-port-now#readme",
+  "bin": {
+    "kill-port-now": "bin/kp",
+    "kp": "bin/kp"
+  },
+  "main": "index.js",
+  "types": "index.d.ts",
+  "files": [
+    "bin/",
+    "bench/",
+    "index.js",
+    "index.d.ts",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "test": "node --test",
+    "bench": "node bench/bench.js",
+    "pack:dry": "npm pack --dry-run"
+  },
+  "keywords": [
+    "kill-port",
+    "kill-port-now",
+    "kp",
+    "port",
+    "process",
+    "cli",
+    "lsof",
+    "dev-server"
+  ],
+  "engines": {
+    "node": ">=18"
+  }
+}
