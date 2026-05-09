@@ -14,6 +14,7 @@ npm i -g kill-port-now
 
 ```sh
 kp 3000
+kill-port 3000
 kill-port-now 3000 5173
 kill-port-now --port 3000,3001 --protocol all
 ```
@@ -57,10 +58,20 @@ npm run bench
 const killPort = require('kill-port-now')
 
 await killPort(3000)
+await killPort(3000, 'udp')
 await killPort.killPorts([3000, 5173], { protocol: 'all' })
 ```
 
-## Compatibility
+## `kill-port` compatibility
+
+| Behavior | Status |
+| --- | --- |
+| `require('kill-port-now')(port)` | Compatible |
+| `kill(port, 'tcp' | 'udp')` | Compatible |
+| `kill-port`, `kill-port-now`, `kp` bins | Supported |
+| Free port rejection | Compatible |
+| Success return value | Different: structured result |
+| Windows | Not supported |
 
 Node.js 18+. macOS and Linux with `lsof`.
 

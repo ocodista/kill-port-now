@@ -2,6 +2,7 @@
 
 const assert = require('node:assert/strict')
 const { execFileSync, fork } = require('node:child_process')
+const net = require('node:net')
 const path = require('node:path')
 const test = require('node:test')
 const {
@@ -11,7 +12,8 @@ const {
   parsePorts
 } = require('../index.js')
 
-const fixturePath = path.join(__dirname, '..', 'fixtures', 'server.js')
+const tcpFixturePath = path.join(__dirname, '..', 'fixtures', 'server.js')
+const udpFixturePath = path.join(__dirname, '..', 'fixtures', 'udp-server.js')
 
 function hasLsof() {
   try {
@@ -22,7 +24,7 @@ function hasLsof() {
   }
 }
 
-function startServer() {
+function startServer(fixturePath = tcpFixturePath) {
   return new Promise((resolve, reject) => {
     const child = fork(fixturePath, [], {
       stdio: ['ignore', 'ignore', 'ignore', 'ipc']
@@ -69,9 +71,26 @@ function waitForExit(child) {
   })
 }
 
-async function waitForPid(port, pid) {
+function getUnusedTcpPort() {
+  return new Promise((resolve, reject) => {
+    const server = net.createServer()
+    server.listen(0, '127.0.0.1', () => {
+      const address = server.address()
+      if (!address || typeof address !== 'object') {
+        server.close(() => reject(new Error('Could not allocate a TCP port')))
+        return
+      }
+
+      const port = address.port
+      server.close(() => resolve(port))
+    })
+    server.once('error', reject)
+  })
+}
+
+async function waitForPid(port, pid, method = 'tcp') {
   for (let attempt = 0; attempt < 20; attempt += 1) {
-    const pids = await findPidsForPort(port)
+    const pids = await findPidsForPort(port, method)
     if (pids.includes(pid)) {
       return pids
     }
@@ -81,7 +100,7 @@ async function waitForPid(port, pid) {
     })
   }
 
-  return findPidsForPort(port)
+  return findPidsForPort(port, method)
 }
 
 test('parsePort accepts valid port numbers', () => {
@@ -136,4 +155,33 @@ test('killPort dryRun reports matches without killing', { skip: !hasLsof() }, as
   assert.ok(result.pids.includes(child.pid))
   assert.ok(result.killed.includes(child.pid))
   assert.equal(child.exitCode, null)
+})
+
+test("killPort accepts kill-port's method string argument", { skip: !hasLsof() }, async (t) => {
+  const { child, port } = await startServer(udpFixturePath)
+  t.after(() => {
+    if (!child.killed) {
+      child.kill('SIGKILL')
+    }
+  })
+
+  const pids = await waitForPid(port, child.pid, 'udp')
+  assert.ok(pids.includes(child.pid))
+
+  const exitPromise = waitForExit(child)
+  const result = await killPort(port, 'udp')
+  assert.equal(result.protocol, 'udp')
+  assert.ok(result.killed.includes(child.pid))
+
+  const exit = await exitPromise
+  assert.equal(exit.signal, 'SIGKILL')
+})
+
+test("killPort rejects free ports like kill-port's API", { skip: !hasLsof() }, async () => {
+  const port = await getUnusedTcpPort()
+  await assert.rejects(killPort(port), /No process running on port/)
+
+  const result = await killPort(port, { rejectOnNotFound: false })
+  assert.deepEqual(result.pids, [])
+  assert.deepEqual(result.killed, [])
 })

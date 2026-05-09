@@ -13,6 +13,7 @@
   },
   "homepage": "https://github.com/ocodista/kill-port-now#readme",
   "bin": {
+    "kill-port": "bin/kp",
     "kill-port-now": "bin/kp",
     "kp": "bin/kp"
   },
@@ -43,5 +44,9 @@
   ],
   "engines": {
     "node": ">=18"
-  }
+  },
+  "os": [
+    "darwin",
+    "linux"
+  ]
 }

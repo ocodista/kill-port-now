@@ -66,6 +66,23 @@ function normalizeProtocol(protocol = DEFAULT_PROTOCOL) {
   return normalized
 }
 
+function normalizeOptions(options = {}) {
+  if (typeof options === 'string') {
+    return { method: options }
+  }
+
+  if (options && typeof options === 'object' && !Array.isArray(options)) {
+    return options
+  }
+
+  throw new TypeError('Options must be a protocol string or an options object')
+}
+
+function protocolFromOptions(options) {
+  const normalizedOptions = normalizeOptions(options)
+  return normalizeProtocol(normalizedOptions.protocol ?? normalizedOptions.method)
+}
+
 function normalizeSignal(signal = DEFAULT_SIGNAL) {
   if (typeof signal === 'number') {
     if (!Number.isSafeInteger(signal) || signal < 1) {
@@ -153,7 +170,7 @@ async function runLsof(args) {
 
 async function findPidsForPort(portInput, options = {}) {
   const port = parsePort(portInput)
-  const protocol = normalizeProtocol(options.protocol ?? options.method)
+  const protocol = protocolFromOptions(options)
 
   if (protocol === 'all') {
     const [tcpPids, udpPids] = await Promise.all([
@@ -200,10 +217,17 @@ function killPids(pids, signal, dryRun) {
 
 async function killPort(portInput, options = {}) {
   const port = parsePort(portInput)
-  const protocol = normalizeProtocol(options.protocol ?? options.method)
-  const signal = normalizeSignal(options.signal)
-  const dryRun = options.dryRun === true
+  const normalizedOptions = normalizeOptions(options)
+  const protocol = normalizeProtocol(normalizedOptions.protocol ?? normalizedOptions.method)
+  const signal = normalizeSignal(normalizedOptions.signal)
+  const dryRun = normalizedOptions.dryRun === true
+  const rejectOnNotFound = normalizedOptions.rejectOnNotFound !== false
   const pids = await findPidsForPort(port, { protocol })
+
+  if (pids.length === 0 && rejectOnNotFound) {
+    throw new Error('No process running on port')
+  }
+
   const outcome = killPids(pids, signal, dryRun)
 
   return {
@@ -217,9 +241,11 @@ async function killPort(portInput, options = {}) {
 
 async function killPorts(portInputs, options = {}) {
   const ports = parsePorts(portInputs)
-  const protocol = normalizeProtocol(options.protocol ?? options.method)
-  const signal = normalizeSignal(options.signal)
-  const dryRun = options.dryRun === true
+  const normalizedOptions = normalizeOptions(options)
+  const protocol = normalizeProtocol(normalizedOptions.protocol ?? normalizedOptions.method)
+  const signal = normalizeSignal(normalizedOptions.signal)
+  const dryRun = normalizedOptions.dryRun === true
+  const rejectOnNotFound = normalizedOptions.rejectOnNotFound === true
 
   const lookups = await Promise.all(
     ports.map(async (port) => ({
@@ -228,6 +254,11 @@ async function killPorts(portInputs, options = {}) {
       pids: await findPidsForPort(port, { protocol })
     }))
   )
+
+  const missingLookup = lookups.find((lookup) => lookup.pids.length === 0)
+  if (missingLookup && rejectOnNotFound) {
+    throw new Error('No process running on port')
+  }
 
   const allPids = [...new Set(lookups.flatMap((lookup) => lookup.pids))]
   const outcome = killPids(allPids, signal, dryRun)
