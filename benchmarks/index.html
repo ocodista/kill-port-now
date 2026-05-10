@@ -73,6 +73,7 @@
             <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#speedups">Speedups</a>
             <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#latency">Latency</a>
             <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#checks">TCP checks</a>
+            <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#process">Process</a>
             <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#table">Rows</a>
             <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#sources">Sources</a>
           </nav>
@@ -88,12 +89,12 @@
                 <span id="generated-at">Loading snapshot…</span>
               </div>
               <h1 class="max-w-4xl text-4xl font-semibold tracking-[-0.04em] lg:text-6xl">
-                3,000x faster than <code>kill-port</code>.
+                kill-port-now vs <code>kill-port</code>.
               </h1>
               <p class="mt-4 max-w-3xl text-base leading-7 text-secondary">
-                A static benchmark of <code>kill-port@2.0.1</code> versus the Rust default,
-                JS fallback, targeted <code>lsof</code>, macOS <code>netstat</code>, and TCP check-only paths.
-                Results are local macOS measurements across temporary TCP and UDP fixture processes.
+                <code>kill-port-now</code> uses Rust to make port cleanup ~3,000x faster than
+                <code>kill-port@2.0.1</code> in this local macOS benchmark. The dataset also includes
+                the JS fallback, targeted <code>lsof</code>, macOS <code>netstat</code>, and TCP check-only paths.
               </p>
             </div>
             <div class="flex flex-col gap-2 sm:flex-row">
@@ -157,6 +158,17 @@
             <p class="mt-1 text-sm text-muted">Why some tools are benchmark-only references.</p>
             <div id="tool-cards" class="mt-4 grid gap-3"></div>
           </div>
+        </section>
+
+        <section id="process" class="rounded-2xl border border-borderSubtle bg-panel p-5">
+          <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 class="text-lg font-semibold">Development process</h2>
+              <p class="mt-1 text-sm text-muted">How the implementation moved from compatible JS to Rust.</p>
+            </div>
+            <span class="text-xs text-muted">same colors as the benchmark charts</span>
+          </div>
+          <div id="process-timeline" class="grid gap-3 md:grid-cols-2 xl:grid-cols-4"></div>
         </section>
 
         <section id="table" class="rounded-2xl border border-borderSubtle bg-panel p-5">
@@ -257,7 +269,7 @@
           ["TCP kill", `${fmt.format(speedup(killPortTcp, rustTcp))}x`, `${formatMs(killPortTcp.meanMs)} → ${formatMs(rustTcp.meanMs)}`],
           ["Empty port", `${fmt.format(speedup(killPortEmpty, rustEmpty))}x`, `${formatMs(killPortEmpty.meanMs)} → ${formatMs(rustEmpty.meanMs)}`],
           ["UDP kill", `${fmt.format(speedup(killPortUdp, rustUdp))}x`, `${formatMs(killPortUdp.meanMs)} → ${formatMs(rustUdp.meanMs)}`],
-          ["Free-port check", formatMs(fpCheck.meanMs), "native fp-rs mean latency"],
+          ["TCP check", formatMs(fpCheck.meanMs), "native fp-rs benchmark helper"],
         ];
         document.getElementById("kpis").innerHTML = cards.map(([label, value, detail]) => `
           <div class="rounded-2xl border border-borderSubtle bg-white/[0.025] p-4">
@@ -283,7 +295,7 @@
             formatter: (items) => {
               const item = items[0];
               const row = rows[item.dataIndex];
-              return `${scenarioById[row.scenarioId].name}<br/>speedup: ${fmt.format(row.value)}x<br/>kill-port: ${formatMs(row.baseline.meanMs)}<br/>Rust: ${formatMs(row.rust.meanMs)}`;
+              return `${scenarioById[row.scenarioId].name}<br/>speedup: ${fmt.format(row.value)}x<br/>kill-port: ${formatMs(row.baseline.meanMs)}<br/>kill-port-now: ${formatMs(row.rust.meanMs)}`;
             },
           },
           xAxis: {
@@ -378,9 +390,9 @@
 
       function renderTakeaways() {
         const lines = [
-          ["Rust default wins", "~3 ms for TCP/UDP kill and empty-port no-op."],
+          ["kill-port-now wins", "Rust keeps TCP/UDP kill and empty-port no-op near 3 ms."],
           ["Legacy path is seconds", "kill-port spends ~10 seconds in this local run."],
-          ["Targeted lookup matters", "Even raw lsof is ~27 ms when it avoids a full socket scan."],
+          ["Targeted lookup matters", "Raw lsof drops to ~27 ms when it avoids a full socket scan."],
           ["Checks are separate", "bash /dev/tcp is fast but cannot identify or kill a PID."],
         ];
         document.getElementById("takeaways").innerHTML = lines.map(([title, body]) => `
@@ -427,6 +439,38 @@
         }).join("");
       }
 
+      function renderProcessTimeline() {
+        const steps = [
+          {
+            toolId: "kill-port-now-js",
+            title: "1. JS drop-in",
+            body: "Started with an API-compatible Node replacement for kill-port.",
+          },
+          {
+            toolId: "macos-lsof",
+            title: "2. Targeted lsof",
+            body: "Replaced full socket scans with one focused lsof lookup per port.",
+          },
+          {
+            toolId: "macos-netstat",
+            title: "3. No-lsof shell path",
+            body: "Measured macOS netstat because verbose output exposes command:pid.",
+          },
+          {
+            toolId: "kill-port-now-rust",
+            title: "4. Rust implementation",
+            body: "Settled on Rust for the package binary: no lsof, no shell pipeline, ~3 ms latency.",
+          },
+        ];
+
+        document.getElementById("process-timeline").innerHTML = steps.map((step) => `
+          <div class="rounded-2xl border border-borderSubtle bg-white/[0.025] p-4" style="border-color:${colorByTool[step.toolId]}55">
+            <div class="flex items-center gap-2 text-sm font-semibold text-secondary">${toolDot(step.toolId)}${step.title}</div>
+            <p class="mt-3 text-sm leading-6 text-muted">${step.body}</p>
+          </div>
+        `).join("");
+      }
+
       function renderTable() {
         document.getElementById("rows").innerHTML = data.rows
           .map((row) => {
@@ -470,6 +514,7 @@
       renderTakeaways();
       renderFastestList();
       renderToolCards();
+      renderProcessTimeline();
       renderTable();
       renderAssumptions();
       lucide.createIcons();

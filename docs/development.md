@@ -33,7 +33,7 @@ These are benchmark references, not the default product path:
 - bash `netstat | awk + kill`: shell-only no-`lsof` kill path on macOS.
 - bash `/dev/tcp`: TCP reachability check only. It cannot map a port to a PID.
 
-Keep these alternatives in benchmark docs. The README should focus on the Rust default and speedup against `kill-port`.
+Keep these alternatives in benchmark docs. The README should focus on `kp` and the speedup against `kill-port`.
 
 ## Build
 
