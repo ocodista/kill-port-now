@@ -39,6 +39,40 @@ TCP check-only rows:
 | Free port | `2.49 ms` | `2.13 ms` | `3.73 ms` | `27.77 ms` |
 | In-use port | `2.72 ms` | `2.25 ms` | `3.98 ms` | `28.44 ms` |
 
+### Mermaid charts
+
+```mermaid
+xychart-beta
+  title "Empty port mean latency (ms)"
+  x-axis ["kill-port", "JS", "lsof", "netstat", "Rust"]
+  y-axis "ms" 0 --> 11200
+  bar [11032.29, 57.65, 27.53, 4.00, 3.02]
+```
+
+```mermaid
+xychart-beta
+  title "TCP kill mean latency (ms)"
+  x-axis ["kill-port", "JS", "lsof", "netstat", "bash", "Rust"]
+  y-axis "ms" 0 --> 10500
+  bar [10311.02, 58.44, 27.72, 4.07, 5.44, 3.24]
+```
+
+```mermaid
+xychart-beta
+  title "UDP kill mean latency (ms)"
+  x-axis ["kill-port", "JS", "lsof", "netstat", "bash", "Rust"]
+  y-axis "ms" 0 --> 10500
+  bar [10219.75, 57.22, 28.62, 3.81, 5.16, 3.25]
+```
+
+```mermaid
+xychart-beta
+  title "TCP check-only mean latency (ms)"
+  x-axis ["free bash", "free fp", "free netstat", "free lsof", "used bash", "used fp", "used netstat", "used lsof"]
+  y-axis "ms" 0 --> 30
+  bar [2.49, 2.13, 3.73, 27.77, 2.72, 2.25, 3.98, 28.44]
+```
+
 Full dashboard:
 
 ```sh
