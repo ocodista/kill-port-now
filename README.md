@@ -1,6 +1,25 @@
-# kill-port-now
-
-API-compatible `kill-port` replacement that is thousands of times faster.
+<div align="center">
+  <img src="./logo.png" alt="kill-port-now logo" width="500px">
+</div>
+<h1 align="center">kill-port-now</h1>
+<div align="center">
+  <strong>API-compatible kill-port replacement that's 3,000x+ faster.</strong>
+</div>
+<br>
+<div align="center">
+  <a href="https://npmjs.org/package/kill-port-now">
+    <img src="https://img.shields.io/npm/v/kill-port-now.svg?style=flat-square" alt="Package version" />
+  </a>
+  <a href="https://npmjs.org/package/kill-port-now">
+    <img src="https://img.shields.io/npm/dm/kill-port-now.svg?style=flat-square" alt="Downloads" />
+  </a>
+  <a href="./LICENSE">
+    <img src="https://img.shields.io/npm/l/kill-port-now.svg?style=flat-square" alt="License" />
+  </a>
+  <img src="https://img.shields.io/badge/node-%3E%3D18-339933?style=flat-square" alt="Node >=18" />
+  <img src="https://img.shields.io/badge/benchmark-3000x%2B%20faster-30a46c?style=flat-square" alt="3000x+ faster" />
+</div>
+<br>
 
 [`kill-port@2.0.1`](https://www.npmjs.com/package/kill-port) has 1M+ weekly downloads, but a single port kill can take ~10 seconds on macOS. `kill-port-now` keeps the documented `kill-port` API and uses a no-dependency Rust CLI by default.
 

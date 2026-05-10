@@ -28,6 +28,7 @@
     "scripts/",
     "index.js",
     "index.d.ts",
+    "logo.png",
     "README.md",
     "LICENSE"
   ],

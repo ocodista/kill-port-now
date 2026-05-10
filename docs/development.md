@@ -93,8 +93,7 @@ To refresh macOS arm64:
 ```sh
 cargo build --release --manifest-path native/Cargo.toml
 cp native/target/release/kp-rs prebuilds/darwin-arm64/kp-rs
-cp native/target/release/fp-rs prebuilds/darwin-arm64/fp-rs
-strip -x prebuilds/darwin-arm64/kp-rs prebuilds/darwin-arm64/fp-rs
+strip -x prebuilds/darwin-arm64/kp-rs
 ```
 
 To refresh macOS x64 from Apple Silicon, use rustup's Rust compiler, not the Homebrew `rustc`:
@@ -106,8 +105,7 @@ RUSTC=$(rustup which rustc --toolchain stable) \
   --manifest-path native/Cargo.toml \
   --target x86_64-apple-darwin
 cp native/target/x86_64-apple-darwin/release/kp-rs prebuilds/darwin-x64/kp-rs
-cp native/target/x86_64-apple-darwin/release/fp-rs prebuilds/darwin-x64/fp-rs
-strip -x prebuilds/darwin-x64/kp-rs prebuilds/darwin-x64/fp-rs
+strip -x prebuilds/darwin-x64/kp-rs
 ```
 
 ## Release

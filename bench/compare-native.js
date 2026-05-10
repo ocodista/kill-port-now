@@ -12,9 +12,8 @@ const TCP_FIXTURE = path.join(ROOT, 'fixtures', 'server.js')
 const UDP_FIXTURE = path.join(ROOT, 'fixtures', 'udp-server.js')
 const JS_KP = path.join(ROOT, 'bin', 'kp-js')
 const DEFAULT_KP = path.join(ROOT, 'bin', 'kp')
-const DEFAULT_FP = path.join(ROOT, 'bin', 'fp')
 const NATIVE_KP = nativeBinaryPath('kp-rs') || DEFAULT_KP
-const NATIVE_FP = nativeBinaryPath('fp-rs') || DEFAULT_FP
+const RUST_FP = path.join(ROOT, 'native', 'target', 'release', process.platform === 'win32' ? 'fp-rs.exe' : 'fp-rs')
 const BENCHMARK_DATA_DIR = path.join(ROOT, 'benchmarks', 'data')
 
 const SCENARIOS = [
@@ -399,7 +398,7 @@ async function main() {
     const oldCli = ['node', [killPort.cli]]
     const jsCli = ['node', [JS_KP, '--quiet']]
     const rustCli = [NATIVE_KP, ['--quiet']]
-    const fpCli = [NATIVE_FP, []]
+    const fpCli = [RUST_FP, []]
 
     const definitions = [
       {
@@ -596,7 +595,7 @@ async function main() {
         protocol: 'tcp',
         destructive: false,
         validForKillComparison: false,
-        commandLabel: 'bin/fp <free-port>',
+        commandLabel: 'native/target/release/fp-rs <free-port>',
         sample: () => sampleEmpty((port) => run(fpCli[0], [...fpCli[1], String(port)]).ms)
       },
       {
@@ -638,7 +637,7 @@ async function main() {
         protocol: 'tcp',
         destructive: false,
         validForKillComparison: false,
-        commandLabel: 'bin/fp <used-port>',
+        commandLabel: 'native/target/release/fp-rs <used-port>',
         sample: () => sampleCheckInUse((port) => run(fpCli[0], [...fpCli[1], String(port)]).ms)
       },
       {
