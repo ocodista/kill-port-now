@@ -1,0 +1,14 @@
+[package]
+name = "kill-port-now-native"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+publish = false
+
+[[bin]]
+name = "kp-rs"
+path = "src/bin/kp.rs"
+
+[[bin]]
+name = "fp-rs"
+path = "src/bin/fp.rs"

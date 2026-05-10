@@ -2,9 +2,9 @@
 
 Tiny, zero-dependency, API-compatible `kill-port` replacement optimized for dev-server cleanup.
 
-Use it as a drop-in for documented `kill-port` calls on macOS/Linux: `kill(port)` and `kill(port, 'udp')`. If you inspect the resolved value, `kill-port-now` returns a structured result.
+Killing one port should not take seconds. `kill-port@2.0.1` scans every open socket, then runs `lsof | grep | awk | xargs kill -9`. `kill-port-now` does one targeted `lsof` lookup and kills PIDs directly from Node.
 
-`kill-port@2.0.1` scans every open socket, then runs `lsof | grep | awk | xargs kill -9`. `kill-port-now` does one targeted `lsof` lookup and kills PIDs directly from Node.
+Use it as a drop-in for documented `kill-port` calls on macOS/Linux: `kill(port)` and `kill(port, 'udp')`. If you inspect the resolved value, `kill-port-now` returns a structured result.
 
 ## Install
 
@@ -23,18 +23,56 @@ kill-port-now --port 3000,3001 --protocol all
 
 ## Benchmark
 
-Local no-listener benchmark on macOS, port `65535`, 3 iterations.
+Local macOS benchmark, 3 iterations.
 
-| Tool | Mean lookup time | Chart | Speed |
-| --- | ---: | --- | ---: |
-| `kill-port` lookup path | `8859.53 ms` | `████████████████████████████████████████` | `1x` |
-| `kill-port-now` lookup | `42.01 ms` | `▏` | `210.9x faster` |
+| Operation | `kill-port` | `kill-port-now` JS | `kp-rs` native |
+| --- | ---: | ---: | ---: |
+| Empty port | `7307.94 ms` | `56.72 ms` | `3.46 ms` |
+| TCP kill | `5235.45 ms` | `56.44 ms` | `2.96 ms` |
+| UDP kill | `5409.06 ms` | `60.56 ms` | `3.00 ms` |
+
+### Empty port
+
+| Tool | Mean | Chart |
+| --- | ---: | --- |
+| `kill-port` | `7307.94 ms` | `████████████████████████████████████████` |
+| `kill-port-now` JS | `56.72 ms` | `▎` |
+| `kp-rs` native | `3.46 ms` | `▏` |
+
+### TCP kill
+
+| Tool | Mean | Chart |
+| --- | ---: | --- |
+| `kill-port` | `5235.45 ms` | `████████████████████████████████████████` |
+| `kill-port-now` JS | `56.44 ms` | `▍` |
+| `kp-rs` native | `2.96 ms` | `▏` |
+
+### UDP kill
+
+| Tool | Mean | Chart |
+| --- | ---: | --- |
+| `kill-port` | `5409.06 ms` | `████████████████████████████████████████` |
+| `kill-port-now` JS | `60.56 ms` | `▍` |
+| `kp-rs` native | `3.00 ms` | `▏` |
 
 ```sh
 npm run bench
+npm run bench:native
 ```
 
-## Why it is faster
+## Native prototype
+
+This repo includes no-dependency Rust prototypes:
+
+```sh
+cargo build --release --manifest-path native/Cargo.toml
+native/target/release/kp-rs 3000
+native/target/release/fp-rs 3000
+```
+
+`kp-rs` does not call `lsof`. It uses `libproc` on macOS and `/proc` on Linux.
+
+## Why the JS version is faster
 
 - Targeted lookup: `lsof -nP -t -iTCP:<port> -sTCP:LISTEN`
 - No shell pipeline
