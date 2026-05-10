@@ -6,7 +6,7 @@ This document describes how to develop, benchmark, and release `kill-port-now`.
 
 `kill-port-now` has three layers:
 
-1. **Rust CLI default**
+1. **Native CLI**
    - `native/src/bin/kp.rs` kills processes by port.
    - `native/src/bin/fp.rs` checks whether a TCP port is free.
    - macOS uses `libproc`.
@@ -23,17 +23,16 @@ This document describes how to develop, benchmark, and release `kill-port-now`.
    - `bin/kp-js` is the dependency-free Node CLI fallback.
    - It uses one targeted lookup instead of the old full socket scan.
 
-## Alternative approaches measured
+## Development path
 
-These are benchmark references, not the default product path:
+The implementation went through four steps:
 
-- `kill-port@2.0.1`: baseline package.
-- Targeted macOS `lsof`: isolates external lookup cost.
-- macOS `netstat -anv -p tcp|udp`: no-`lsof` port-to-PID lookup.
-- bash `netstat | awk + kill`: shell-only no-`lsof` kill path on macOS.
-- bash `/dev/tcp`: TCP reachability check only. It cannot map a port to a PID.
+1. Started with an API-compatible JS replacement.
+2. Optimized the JS path with targeted `lsof`.
+3. Explored no-`lsof` native lookup paths.
+4. Settled on the native `kp` implementation.
 
-Keep these alternatives in benchmark docs. The README should focus on `kp` and the speedup against `kill-port`.
+The public benchmark stays focused on the package comparison: `kill-port@2.0.1` vs `kill-port-now`.
 
 ## Build
 
@@ -78,7 +77,7 @@ The benchmark runner:
 - builds the Rust release binaries;
 - installs `kill-port@2.0.1` in a temp directory;
 - creates temporary TCP and UDP fixture servers;
-- measures empty-port, TCP kill, UDP kill, and check-only paths;
+- measures empty-port, UDP kill, and TCP kill scenarios;
 - writes `benchmarks/data/latest.json` and `benchmarks/data/latest.js`.
 
 ## Prebuilds

@@ -6,7 +6,7 @@
     <title>kill-port-now benchmark</title>
     <meta
       name="description"
-      content="Static benchmark comparing kill-port, kill-port-now Rust, the JS fallback, targeted lsof, netstat, and shell TCP checks."
+      content="Static benchmark comparing kill-port and kill-port-now on empty port, UDP kill, and TCP kill."
     />
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -24,15 +24,11 @@
             colors: {
               page: "#08090a",
               panel: "#0f1011",
-              elevated: "#18191b",
-              surface: "#24262a",
               primary: "#f7f8f8",
               secondary: "#d0d6e0",
               muted: "#8a8f98",
               faint: "#62666d",
-              accent: "#5e6ad2",
               green: "#30a46c",
-              amber: "#f5a524",
               red: "#ef4444",
               borderSubtle: "rgba(255,255,255,0.06)",
               borderDefault: "rgba(255,255,255,0.1)",
@@ -50,7 +46,6 @@
       body { background: #08090a; font-feature-settings: "cv01", "ss03"; }
       code { color: #d0d6e0; }
       .chart-panel { min-height: 390px; width: 100%; }
-      .chart-panel-sm { min-height: 320px; width: 100%; }
       ::-webkit-scrollbar { width: 8px; height: 8px; }
       ::-webkit-scrollbar-track { background: transparent; }
       ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
@@ -65,17 +60,15 @@
             kill-port-now Bench
           </div>
           <p class="mt-2 text-xs leading-5 text-muted">
-            Local single-port cleanup benchmark. Lower latency wins; speedups use
+            Direct package comparison. Lower latency wins; speedups use
             <code>kill-port@2.0.1</code> as the baseline.
           </p>
           <nav class="mt-6 space-y-1 text-sm text-secondary">
             <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#overview">Overview</a>
             <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#latency">Time comparison</a>
             <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#speedups">Speedups</a>
-            <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#checks">TCP checks</a>
-            <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#process">Process</a>
             <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#table">Rows</a>
-            <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#sources">Sources</a>
+            <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#sources">Methodology</a>
           </nav>
         </div>
       </aside>
@@ -92,9 +85,9 @@
                 kill-port-now vs <code>kill-port</code>.
               </h1>
               <p class="mt-4 max-w-3xl text-base leading-7 text-secondary">
-                <code>kill-port-now</code> uses Rust to make port cleanup ~3,000x faster than
-                <code>kill-port@2.0.1</code> in this local macOS benchmark. The dataset also includes
-                the JS fallback, targeted <code>lsof</code>, macOS <code>netstat</code>, and TCP check-only paths.
+                A direct, scenario-by-scenario benchmark of <code>kill-port-now</code> against
+                <code>kill-port@2.0.1</code>. The primary scenarios are empty port, UDP kill,
+                and TCP kill.
               </p>
             </div>
             <div class="flex flex-col gap-2 sm:flex-row">
@@ -108,14 +101,14 @@
               </a>
             </div>
           </div>
-          <div id="kpis" class="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"></div>
+          <div id="kpis" class="mt-8 grid gap-3 sm:grid-cols-3"></div>
         </header>
 
         <section id="latency" class="grid gap-4 lg:grid-cols-3">
           <div class="rounded-2xl border border-borderSubtle bg-panel p-5 lg:col-span-2">
             <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <h2 class="text-lg font-semibold">Primary time comparison</h2>
+                <h2 class="text-lg font-semibold">Time by scenario</h2>
                 <p class="mt-1 text-sm text-muted">Mean latency for empty port, UDP kill, and TCP kill. Lower is better.</p>
               </div>
               <span class="text-xs text-muted">milliseconds · log scale</span>
@@ -123,8 +116,8 @@
             <div id="latency-chart" class="chart-panel"></div>
           </div>
           <div class="rounded-2xl border border-borderSubtle bg-panel p-5">
-            <h2 class="text-lg font-semibold">Mean latency matrix</h2>
-            <p class="mt-1 text-sm text-muted">Same data as the chart, sorted by implementation.</p>
+            <h2 class="text-lg font-semibold">Mean latency</h2>
+            <p class="mt-1 text-sm text-muted">Same data as the chart.</p>
             <div id="time-matrix" class="mt-4 overflow-x-auto"></div>
           </div>
         </section>
@@ -146,37 +139,11 @@
           </div>
         </section>
 
-        <section id="checks" class="grid gap-4 lg:grid-cols-2">
-          <div class="rounded-2xl border border-borderSubtle bg-panel p-5">
-            <div class="mb-4">
-              <h2 class="text-lg font-semibold">TCP availability checks</h2>
-              <p class="mt-1 text-sm text-muted">Check-only paths. They do not all identify a PID.</p>
-            </div>
-            <div id="check-chart" class="chart-panel-sm"></div>
-          </div>
-          <div class="rounded-2xl border border-borderSubtle bg-panel p-5">
-            <h2 class="text-lg font-semibold">Tool traits</h2>
-            <p class="mt-1 text-sm text-muted">Why some tools are benchmark-only references.</p>
-            <div id="tool-cards" class="mt-4 grid gap-3"></div>
-          </div>
-        </section>
-
-        <section id="process" class="rounded-2xl border border-borderSubtle bg-panel p-5">
-          <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <h2 class="text-lg font-semibold">Development process</h2>
-              <p class="mt-1 text-sm text-muted">How the implementation moved from compatible JS to Rust.</p>
-            </div>
-            <span class="text-xs text-muted">same colors as the benchmark charts</span>
-          </div>
-          <div id="process-timeline" class="grid gap-3 md:grid-cols-2 xl:grid-cols-4"></div>
-        </section>
-
         <section id="table" class="rounded-2xl border border-borderSubtle bg-panel p-5">
           <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
             <div>
               <h2 class="text-lg font-semibold">Benchmark rows</h2>
-              <p class="mt-1 text-sm text-muted">All samples summarized by mean, median, min, and max.</p>
+              <p class="mt-1 text-sm text-muted">Mean, median, min, and max for the direct comparison.</p>
             </div>
             <span id="environment" class="text-xs text-muted"></span>
           </div>
@@ -185,14 +152,13 @@
               <thead class="border-b border-borderDefault text-xs uppercase tracking-wide text-faint">
                 <tr>
                   <th class="py-3 pr-4 font-medium">Scenario</th>
-                  <th class="py-3 pr-4 font-medium">Tool</th>
-                  <th class="py-3 pr-4 font-medium">Operation</th>
+                  <th class="py-3 pr-4 font-medium">Approach</th>
+                  <th class="py-3 pr-4 font-medium">Command</th>
                   <th class="py-3 pr-4 font-medium">Mean</th>
                   <th class="py-3 pr-4 font-medium">Median</th>
                   <th class="py-3 pr-4 font-medium">Min</th>
                   <th class="py-3 pr-4 font-medium">Max</th>
-                  <th class="py-3 pr-4 font-medium">Traits</th>
-                  <th class="py-3 pr-4 font-medium">Notes</th>
+                  <th class="py-3 pr-4 font-medium">vs kill-port</th>
                 </tr>
               </thead>
               <tbody id="rows" class="divide-y divide-borderSubtle"></tbody>
@@ -202,7 +168,7 @@
 
         <section id="sources" class="rounded-2xl border border-borderSubtle bg-panel p-5">
           <div class="mb-4">
-            <h2 class="text-lg font-semibold">Sources and assumptions</h2>
+            <h2 class="text-lg font-semibold">Methodology and environment</h2>
             <p class="mt-1 text-sm text-muted">Benchmark data is generated by <code>npm run bench:native</code>.</p>
           </div>
           <div id="assumption-list" class="grid gap-2 sm:grid-cols-2"></div>
@@ -216,27 +182,24 @@
       const scenarioById = Object.fromEntries(data.scenarios.map((scenario) => [scenario.id, scenario]));
       const colorByTool = {
         "kill-port": "#ef4444",
-        "kill-port-now-js": "#5e6ad2",
-        "macos-lsof": "#f5a524",
-        "macos-netstat": "#fb7185",
-        "bash-netstat": "#f97316",
-        "kill-port-now-rust": "#30a46c",
-        "bash-dev-tcp": "#8b5cf6",
-        "fp-rs": "#14b8a6",
+        "kill-port-now": "#30a46c",
       };
       const fmt = new Intl.NumberFormat("en-US", { maximumFractionDigits: 2 });
       const compact = new Intl.NumberFormat("en-US", { notation: "compact", maximumFractionDigits: 1 });
 
-      const killScenarioIds = ["empty-port", "udp-kill", "tcp-kill"];
-      const comparedToolIds = ["kill-port", "kill-port-now-js", "macos-lsof", "macos-netstat", "bash-netstat", "kill-port-now-rust"];
-      const checkScenarioIds = ["tcp-check-free", "tcp-check-in-use"];
+      const scenarioIds = ["empty-port", "udp-kill", "tcp-kill"];
+      const toolIds = ["kill-port", "kill-port-now"];
+
+      function displayToolName(toolId) {
+        return toolId === "kill-port-now" ? "kill-port-now" : toolById[toolId]?.name || toolId;
+      }
 
       function rowFor(scenarioId, toolId) {
         return data.rows.find((row) => row.scenarioId === scenarioId && row.toolId === toolId);
       }
 
-      function rowsForScenario(id) {
-        return data.rows.filter((row) => row.scenarioId === id);
+      function orderedRows() {
+        return scenarioIds.flatMap((scenarioId) => toolIds.map((toolId) => rowFor(scenarioId, toolId)).filter(Boolean));
       }
 
       function speedup(slow, fast) {
@@ -247,28 +210,33 @@
         return `${fmt.format(value)} ms`;
       }
 
+      function formatSpeedup(value) {
+        return value ? `${fmt.format(value)}x` : "—";
+      }
+
       function toolDot(toolId) {
         return `<span class="inline-block h-2.5 w-2.5 rounded-full" style="background:${colorByTool[toolId] || "#5e6ad2"}"></span>`;
       }
 
-      function traits(tool) {
-        return [tool.native ? "native" : "node/shell", tool.usesLsof ? "lsof" : "no lsof", tool.usesShellPipeline ? "pipeline" : "no pipeline"];
+      function escapeHtml(value) {
+        return String(value)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;")
+          .replace(/"/g, "&quot;");
       }
 
       function renderKpis() {
-        const rustTcp = rowFor("tcp-kill", "kill-port-now-rust");
-        const killPortTcp = rowFor("tcp-kill", "kill-port");
-        const rustEmpty = rowFor("empty-port", "kill-port-now-rust");
-        const killPortEmpty = rowFor("empty-port", "kill-port");
-        const rustUdp = rowFor("udp-kill", "kill-port-now-rust");
-        const killPortUdp = rowFor("udp-kill", "kill-port");
-        const fpCheck = rowFor("tcp-check-free", "fp-rs");
-        const cards = [
-          ["Empty port", `${fmt.format(speedup(killPortEmpty, rustEmpty))}x`, `${formatMs(killPortEmpty.meanMs)} → ${formatMs(rustEmpty.meanMs)}`],
-          ["UDP kill", `${fmt.format(speedup(killPortUdp, rustUdp))}x`, `${formatMs(killPortUdp.meanMs)} → ${formatMs(rustUdp.meanMs)}`],
-          ["TCP kill", `${fmt.format(speedup(killPortTcp, rustTcp))}x`, `${formatMs(killPortTcp.meanMs)} → ${formatMs(rustTcp.meanMs)}`],
-          ["TCP check", formatMs(fpCheck.meanMs), "native fp-rs benchmark helper"],
-        ];
+        const cards = scenarioIds.map((scenarioId) => {
+          const baseline = rowFor(scenarioId, "kill-port");
+          const current = rowFor(scenarioId, "kill-port-now");
+          return [
+            scenarioById[scenarioId].name,
+            formatSpeedup(speedup(baseline, current)),
+            `${formatMs(baseline.meanMs)} → ${formatMs(current.meanMs)}`,
+          ];
+        });
+
         document.getElementById("kpis").innerHTML = cards.map(([label, value, detail]) => `
           <div class="rounded-2xl border border-borderSubtle bg-white/[0.025] p-4">
             <div class="text-xs uppercase tracking-wide text-faint">${label}</div>
@@ -278,11 +246,71 @@
         `).join("");
       }
 
+      function renderLatencyChart() {
+        const chart = echarts.init(document.getElementById("latency-chart"));
+        chart.setOption({
+          legend: { top: 0, textStyle: { color: "#d0d6e0" } },
+          grid: { left: 60, right: 24, top: 48, bottom: 42 },
+          tooltip: {
+            trigger: "axis",
+            axisPointer: { type: "shadow" },
+            formatter: (items) => items.map((item) => `${item.marker}${item.seriesName}: ${formatMs(item.value)}`).join("<br/>"),
+          },
+          xAxis: {
+            type: "category",
+            data: scenarioIds.map((id) => scenarioById[id].name),
+            axisLabel: { color: "#d0d6e0" },
+            axisLine: { lineStyle: { color: "rgba(255,255,255,0.1)" } },
+            axisTick: { show: false },
+          },
+          yAxis: {
+            type: "log",
+            min: 1,
+            name: "ms (log scale)",
+            nameTextStyle: { color: "#8a8f98" },
+            axisLabel: { color: "#8a8f98", formatter: (value) => `${fmt.format(value)}` },
+            splitLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } },
+          },
+          series: toolIds.map((toolId) => ({
+            name: displayToolName(toolId),
+            type: "bar",
+            data: scenarioIds.map((scenarioId) => rowFor(scenarioId, toolId)?.meanMs ?? null),
+            itemStyle: { color: colorByTool[toolId] },
+            barMaxWidth: 36,
+          })),
+        });
+        window.addEventListener("resize", () => chart.resize());
+      }
+
+      function renderTimeMatrix() {
+        document.getElementById("time-matrix").innerHTML = `
+          <table class="min-w-full text-left text-sm">
+            <thead class="border-b border-borderDefault text-xs uppercase tracking-wide text-faint">
+              <tr>
+                <th class="py-2 pr-3 font-medium">Approach</th>
+                ${scenarioIds.map((scenarioId) => `<th class="py-2 pr-3 text-right font-medium">${scenarioById[scenarioId].name}</th>`).join("")}
+              </tr>
+            </thead>
+            <tbody class="divide-y divide-borderSubtle">
+              ${toolIds.map((toolId) => `
+                <tr class="align-top hover:bg-white/[0.025]">
+                  <td class="py-2 pr-3 text-secondary"><span class="mr-2">${toolDot(toolId)}</span>${displayToolName(toolId)}</td>
+                  ${scenarioIds.map((scenarioId) => {
+                    const row = rowFor(scenarioId, toolId);
+                    return `<td class="py-2 pr-3 text-right font-medium">${row ? formatMs(row.meanMs) : "—"}</td>`;
+                  }).join("")}
+                </tr>
+              `).join("")}
+            </tbody>
+          </table>
+        `;
+      }
+
       function renderSpeedupChart() {
-        const rows = killScenarioIds.map((scenarioId) => {
+        const rows = scenarioIds.map((scenarioId) => {
           const baseline = rowFor(scenarioId, "kill-port");
-          const rust = rowFor(scenarioId, "kill-port-now-rust");
-          return { scenarioId, value: speedup(baseline, rust), baseline, rust };
+          const current = rowFor(scenarioId, "kill-port-now");
+          return { scenarioId, value: speedup(baseline, current), baseline, current };
         });
         const chart = echarts.init(document.getElementById("speedup-chart"));
         chart.setOption({
@@ -291,9 +319,8 @@
             trigger: "axis",
             axisPointer: { type: "shadow" },
             formatter: (items) => {
-              const item = items[0];
-              const row = rows[item.dataIndex];
-              return `${scenarioById[row.scenarioId].name}<br/>speedup: ${fmt.format(row.value)}x<br/>kill-port: ${formatMs(row.baseline.meanMs)}<br/>kill-port-now: ${formatMs(row.rust.meanMs)}`;
+              const row = rows[items[0].dataIndex];
+              return `${scenarioById[row.scenarioId].name}<br/>speedup: ${formatSpeedup(row.value)}<br/>kill-port: ${formatMs(row.baseline.meanMs)}<br/>kill-port-now: ${formatMs(row.current.meanMs)}`;
             },
           },
           xAxis: {
@@ -320,77 +347,15 @@
         window.addEventListener("resize", () => chart.resize());
       }
 
-      function renderLatencyChart() {
-        const scenarioNames = killScenarioIds.map((id) => scenarioById[id].name);
-        const chart = echarts.init(document.getElementById("latency-chart"));
-        chart.setOption({
-          legend: { top: 0, textStyle: { color: "#d0d6e0" } },
-          grid: { left: 60, right: 24, top: 48, bottom: 42 },
-          tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
-          xAxis: {
-            type: "category",
-            data: scenarioNames,
-            axisLabel: { color: "#d0d6e0" },
-            axisLine: { lineStyle: { color: "rgba(255,255,255,0.1)" } },
-            axisTick: { show: false },
-          },
-          yAxis: {
-            type: "log",
-            min: 1,
-            name: "ms (log scale)",
-            nameTextStyle: { color: "#8a8f98" },
-            axisLabel: { color: "#8a8f98", formatter: (value) => `${fmt.format(value)}` },
-            splitLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } },
-          },
-          series: comparedToolIds.map((toolId) => ({
-            name: toolById[toolId].name,
-            type: "bar",
-            data: killScenarioIds.map((scenarioId) => rowFor(scenarioId, toolId)?.meanMs ?? null),
-            itemStyle: { color: colorByTool[toolId] },
-            barMaxWidth: 20,
-          })),
-        });
-        window.addEventListener("resize", () => chart.resize());
-      }
-
-      function renderCheckChart() {
-        const selectedTools = ["bash-dev-tcp", "fp-rs", "macos-netstat", "macos-lsof"];
-        const chart = echarts.init(document.getElementById("check-chart"));
-        chart.setOption({
-          legend: { top: 0, textStyle: { color: "#d0d6e0" } },
-          grid: { left: 48, right: 20, top: 44, bottom: 36 },
-          tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
-          xAxis: {
-            type: "category",
-            data: checkScenarioIds.map((id) => scenarioById[id].name.replace("TCP ", "")),
-            axisLabel: { color: "#d0d6e0" },
-            axisLine: { lineStyle: { color: "rgba(255,255,255,0.1)" } },
-            axisTick: { show: false },
-          },
-          yAxis: {
-            type: "value",
-            name: "ms",
-            nameTextStyle: { color: "#8a8f98" },
-            axisLabel: { color: "#8a8f98" },
-            splitLine: { lineStyle: { color: "rgba(255,255,255,0.06)" } },
-          },
-          series: selectedTools.map((toolId) => ({
-            name: toolById[toolId].name,
-            type: "bar",
-            data: checkScenarioIds.map((scenarioId) => rowFor(scenarioId, toolId)?.meanMs ?? null),
-            itemStyle: { color: colorByTool[toolId] },
-            barMaxWidth: 26,
-          })),
-        });
-        window.addEventListener("resize", () => chart.resize());
-      }
-
       function renderTakeaways() {
+        const empty = speedup(rowFor("empty-port", "kill-port"), rowFor("empty-port", "kill-port-now"));
+        const udp = speedup(rowFor("udp-kill", "kill-port"), rowFor("udp-kill", "kill-port-now"));
+        const tcp = speedup(rowFor("tcp-kill", "kill-port"), rowFor("tcp-kill", "kill-port-now"));
         const lines = [
-          ["kill-port-now wins", "Rust keeps TCP/UDP kill and empty-port no-op near 3 ms."],
-          ["Legacy path is seconds", "kill-port spends ~10 seconds in this local run."],
-          ["Targeted lookup matters", "Raw lsof drops to ~27 ms when it avoids a full socket scan."],
-          ["Checks are separate", "bash /dev/tcp is fast but cannot identify or kill a PID."],
+          ["Empty port", `No-op cleanup is ${formatSpeedup(empty)} faster.`],
+          ["UDP kill", `UDP socket cleanup is ${formatSpeedup(udp)} faster.`],
+          ["TCP kill", `TCP listener cleanup is ${formatSpeedup(tcp)} faster.`],
+          ["Same benchmark shape", "Both packages are measured against the same temporary local fixtures."],
         ];
         document.getElementById("takeaways").innerHTML = lines.map(([title, body]) => `
           <div class="rounded-xl border border-borderSubtle bg-white/[0.025] p-3">
@@ -400,94 +365,22 @@
         `).join("");
       }
 
-      function renderTimeMatrix() {
-        const headers = killScenarioIds.map((scenarioId) => scenarioById[scenarioId].name);
-        document.getElementById("time-matrix").innerHTML = `
-          <table class="min-w-full text-left text-sm">
-            <thead class="border-b border-borderDefault text-xs uppercase tracking-wide text-faint">
-              <tr>
-                <th class="py-2 pr-3 font-medium">Approach</th>
-                ${headers.map((header) => `<th class="py-2 pr-3 text-right font-medium">${header}</th>`).join("")}
-              </tr>
-            </thead>
-            <tbody class="divide-y divide-borderSubtle">
-              ${comparedToolIds.map((toolId) => `
-                <tr class="align-top hover:bg-white/[0.025]">
-                  <td class="py-2 pr-3 text-secondary"><span class="mr-2">${toolDot(toolId)}</span>${toolById[toolId].name}</td>
-                  ${killScenarioIds.map((scenarioId) => {
-                    const row = rowFor(scenarioId, toolId);
-                    return `<td class="py-2 pr-3 text-right font-medium">${row ? formatMs(row.meanMs) : "—"}</td>`;
-                  }).join("")}
-                </tr>
-              `).join("")}
-            </tbody>
-          </table>
-        `;
-      }
-
-      function renderToolCards() {
-        const toolIds = ["kill-port-now-rust", "kill-port", "kill-port-now-js", "macos-lsof", "macos-netstat", "bash-dev-tcp", "fp-rs"];
-        document.getElementById("tool-cards").innerHTML = toolIds.map((toolId) => {
-          const tool = toolById[toolId];
-          return `
-            <div class="rounded-xl border border-borderSubtle bg-white/[0.025] p-3">
-              <div class="flex items-center gap-2 text-sm font-medium text-secondary">${toolDot(toolId)}${tool.name}</div>
-              <div class="mt-2 flex flex-wrap gap-1.5">
-                ${traits(tool).map((trait) => `<span class="rounded-full border border-borderSubtle bg-white/[0.03] px-2 py-0.5 text-[11px] text-muted">${trait}</span>`).join("")}
-              </div>
-            </div>
-          `;
-        }).join("");
-      }
-
-      function renderProcessTimeline() {
-        const steps = [
-          {
-            toolId: "kill-port-now-js",
-            title: "1. JS drop-in",
-            body: "Started with an API-compatible Node replacement for kill-port.",
-          },
-          {
-            toolId: "macos-lsof",
-            title: "2. Targeted lsof",
-            body: "Replaced full socket scans with one focused lsof lookup per port.",
-          },
-          {
-            toolId: "macos-netstat",
-            title: "3. No-lsof shell path",
-            body: "Measured macOS netstat because verbose output exposes command:pid.",
-          },
-          {
-            toolId: "kill-port-now-rust",
-            title: "4. Rust implementation",
-            body: "Settled on Rust for the package binary: no lsof, no shell pipeline, ~3 ms latency.",
-          },
-        ];
-
-        document.getElementById("process-timeline").innerHTML = steps.map((step) => `
-          <div class="rounded-2xl border border-borderSubtle bg-white/[0.025] p-4" style="border-color:${colorByTool[step.toolId]}55">
-            <div class="flex items-center gap-2 text-sm font-semibold text-secondary">${toolDot(step.toolId)}${step.title}</div>
-            <p class="mt-3 text-sm leading-6 text-muted">${step.body}</p>
-          </div>
-        `).join("");
-      }
-
       function renderTable() {
-        document.getElementById("rows").innerHTML = data.rows
+        document.getElementById("rows").innerHTML = orderedRows()
           .map((row) => {
-            const tool = toolById[row.toolId];
             const scenario = scenarioById[row.scenarioId];
+            const baseline = rowFor(row.scenarioId, "kill-port");
+            const ratio = row.toolId === "kill-port" ? "baseline" : formatSpeedup(speedup(baseline, row));
             return `
               <tr class="align-top hover:bg-white/[0.025]">
                 <td class="py-3 pr-4 text-secondary">${scenario.name}</td>
-                <td class="py-3 pr-4"><span class="mr-2">${toolDot(row.toolId)}</span>${tool.name}</td>
-                <td class="py-3 pr-4 text-muted">${row.operation}${row.protocol ? ` · ${row.protocol}` : ""}</td>
+                <td class="py-3 pr-4"><span class="mr-2">${toolDot(row.toolId)}</span>${displayToolName(row.toolId)}</td>
+                <td class="py-3 pr-4 text-muted"><code>${escapeHtml(row.commandLabel || row.operation)}</code></td>
                 <td class="py-3 pr-4 font-medium">${formatMs(row.meanMs)}</td>
                 <td class="py-3 pr-4 text-secondary">${formatMs(row.medianMs)}</td>
                 <td class="py-3 pr-4 text-secondary">${formatMs(row.minMs)}</td>
                 <td class="py-3 pr-4 text-secondary">${formatMs(row.maxMs)}</td>
-                <td class="py-3 pr-4 text-secondary">${traits(tool).join(" · ")}</td>
-                <td class="max-w-sm py-3 pr-4 text-muted">${(row.notes || []).join(" ")}</td>
+                <td class="py-3 pr-4 text-secondary">${ratio}</td>
               </tr>
             `;
           })
@@ -498,10 +391,17 @@
         const environment = [
           `${data.environment.os} ${data.environment.arch}`,
           data.environment.node,
-          data.environment.rustc,
           `${data.environment.iterations} iterations`,
         ];
-        document.getElementById("assumption-list").innerHTML = [...data.assumptions, ...environment].map((item) => `
+        const assumptions = [
+          "Compares only kill-port@2.0.1 and kill-port-now.",
+          "Single-port benchmarks use temporary local fixture processes.",
+          "Empty port measures no-op overhead when no listener exists.",
+          "UDP kill and TCP kill start a fresh fixture process for each sample.",
+          "Rows report mean, median, min, and max. Lower is better.",
+          "Results vary with machine load and process count.",
+        ];
+        document.getElementById("assumption-list").innerHTML = [...assumptions, ...environment].map((item) => `
           <div class="rounded-xl border border-borderSubtle bg-white/[0.025] p-3 text-sm leading-6 text-secondary">${item}</div>
         `).join("");
       }
@@ -509,13 +409,10 @@
       document.getElementById("generated-at").textContent = `${new Date(data.environment.generatedAt).toLocaleString()} · ${data.environment.iterations} iterations`;
       document.getElementById("environment").textContent = `${data.environment.os} ${data.environment.arch} · ${data.environment.node}`;
       renderKpis();
-      renderSpeedupChart();
       renderLatencyChart();
-      renderCheckChart();
-      renderTakeaways();
       renderTimeMatrix();
-      renderToolCards();
-      renderProcessTimeline();
+      renderSpeedupChart();
+      renderTakeaways();
       renderTable();
       renderAssumptions();
       lucide.createIcons();

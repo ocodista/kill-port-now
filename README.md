@@ -48,23 +48,23 @@ Local macOS benchmark, 3 iterations. Lower is better.
 | Operation | `kill-port` | `kill-port-now` | Faster |
 | --- | ---: | ---: | ---: |
 | Empty port | `11032.29 ms` | `3.02 ms` | `3,653x` |
-| TCP kill | `10311.02 ms` | `3.24 ms` | `3,182x` |
-| UDP kill | `10219.75 ms` | `3.25 ms` | `3,145x` |
+| UDP kill | `10219.75 ms` | `3.25 ms` | `3,140x` |
+| TCP kill | `10311.02 ms` | `3.24 ms` | `3,185x` |
 
 ```mermaid
 xychart-beta
   title "Speedup over kill-port"
-  x-axis ["empty", "TCP", "UDP"]
+  x-axis ["empty", "UDP", "TCP"]
   y-axis "times faster" 0 --> 3800
-  bar [3653, 3182, 3145]
+  bar [3653, 3140, 3185]
 ```
 
 ```mermaid
 xychart-beta
   title "Mean latency: kill-port vs kill-port-now"
-  x-axis ["kill-port empty", "kill-port-now empty", "kill-port TCP", "kill-port-now TCP", "kill-port UDP", "kill-port-now UDP"]
+  x-axis ["kill-port empty", "kill-port-now empty", "kill-port UDP", "kill-port-now UDP", "kill-port TCP", "kill-port-now TCP"]
   y-axis "ms" 0 --> 11200
-  bar [11032.29, 3.02, 10311.02, 3.24, 10219.75, 3.25]
+  bar [11032.29, 3.02, 10219.75, 3.25, 10311.02, 3.24]
 ```
 
 Full benchmark dashboard:
