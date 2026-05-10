@@ -15,7 +15,7 @@ case "$os:$arch" in
 esac
 
 if [ -n "$platform" ]; then
-  native="$root_dir/prebuilds/$platform/kp-rs"
+  native="$root_dir/native/prebuilds/$platform/kp-rs"
   if [ -x "$native" ]; then
     exec "$native" "$@"
   fi

@@ -18,13 +18,10 @@
   "main": "index.js",
   "types": "index.d.ts",
   "files": [
-    "assets/",
     "bin/",
-    "bench/",
     "benchmarks/",
     "docs/",
     "native/",
-    "prebuilds/",
     "scripts/",
     "index.js",
     "index.d.ts",
@@ -35,8 +32,8 @@
   "scripts": {
     "postinstall": "node scripts/install-native.js",
     "test": "node --test",
-    "bench": "node bench/bench.js",
-    "bench:native": "node bench/compare-native.js",
+    "bench": "node benchmarks/scripts/lookup-baseline.js",
+    "bench:native": "node benchmarks/scripts/compare-native.js",
     "pack:dry": "npm pack --dry-run"
   },
   "keywords": [

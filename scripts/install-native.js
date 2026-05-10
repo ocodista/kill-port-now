@@ -18,7 +18,7 @@ function platformName() {
 }
 
 function installBinary(platform, sourceName, targetName) {
-  const source = path.join(root, 'prebuilds', platform, sourceName)
+  const source = path.join(root, 'native', 'prebuilds', platform, sourceName)
   const target = path.join(root, 'bin', targetName)
 
   if (!existsSync(source)) {

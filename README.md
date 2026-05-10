@@ -4,7 +4,7 @@
 
 Kill the process listening on a port in milliseconds.
 
-`kill-port-now` is an API-compatible replacement for [`kill-port`](https://www.npmjs.com/package/kill-port). It exists because `kill-port@2.0.1` can take about 10 seconds to handle one port on macOS. This package keeps the familiar Node API, exposes a short `kp` CLI, and uses a native Rust binary when available with a dependency-free Node fallback.
+`kill-port-now` is an API-compatible replacement for [`kill-port`](https://www.npmjs.com/package/kill-port). It keeps the familiar Node API, adds a short `kp` CLI, and uses a native Rust binary when available with a dependency-free Node fallback.
 
 ## Install
 
@@ -23,20 +23,7 @@ kp --port 3000,3001 --protocol all
 kp --dry-run --verbose 3000
 ```
 
-TCP is the default protocol. Use `--protocol udp` for UDP sockets or `--protocol all` to check both.
-
-### Options
-
-| Option | Description |
-| --- | --- |
-| `-p, --port ports` | Comma-separated or repeated ports. |
-| `-m, --method protocol` | Alias for `--protocol`. |
-| `--protocol protocol` | `tcp`, `udp`, or `all`. Defaults to `tcp`. |
-| `-s, --signal signal` | Signal to send. Defaults to `SIGKILL`. |
-| `--dry-run` | Print matches without killing them. |
-| `--strict` | Exit 1 when no process was killed. |
-| `-q, --quiet` | Hide success output. |
-| `-v, --verbose` | Print matched PIDs. |
+TCP is the default protocol. Use `--protocol udp` for UDP sockets or `--protocol all` to check both. Run `kp --help` for every option.
 
 ## Node API
 
@@ -49,16 +36,6 @@ await kill(3000, 'udp')
 await kill(3000, { protocol: 'all', signal: 'SIGTERM' })
 ```
 
-Compatibility with `kill-port`:
-
-| Behavior | Status |
-| --- | --- |
-| `kill(port)` | Compatible |
-| `kill(port, 'tcp')` | Compatible |
-| `kill(port, 'udp')` | Compatible |
-| Free port rejection | Compatible |
-| Multiple ports | Compatible |
-
 ## Benchmark
 
 Local macOS benchmark, 3 iterations. Lower latency is better.
@@ -69,18 +46,23 @@ Local macOS benchmark, 3 iterations. Lower latency is better.
 | UDP kill | `10219.75 ms` | `3.25 ms` | `3,140x` |
 | TCP kill | `10311.02 ms` | `3.24 ms` | `3,185x` |
 
-Run the benchmark dashboard locally:
+```mermaid
+xychart-beta
+    title "Benchmark latency (ms)"
+    x-axis ["Empty port", "UDP kill", "TCP kill"]
+    y-axis "Latency (ms)" 0 --> 12000
+    bar "kill-port" [11032.29, 10219.75, 10311.02]
+    bar "kill-port-now" [3.02, 3.25, 3.24]
+```
 
 ```sh
 npm run bench:native
 open benchmarks/index.html
 ```
 
-`kill-port` has 1M+ weekly downloads. Sources: [npm package page](https://www.npmjs.com/package/kill-port) and [npm downloads API](https://api.npmjs.org/downloads/point/last-week/kill-port).
-
 ## Development
 
-See [docs/development.md](docs/development.md) for architecture, benchmark methodology, fallback paths, native prebuilds, and release steps.
+See [docs/development.md](docs/development.md) for architecture, benchmarks, native prebuilds, fallback paths, and release steps.
 
 ## License
 

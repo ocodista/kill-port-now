@@ -12,8 +12,8 @@ const {
   parsePorts
 } = require('../index.js')
 
-const tcpFixturePath = path.join(__dirname, '..', 'fixtures', 'server.js')
-const udpFixturePath = path.join(__dirname, '..', 'fixtures', 'udp-server.js')
+const tcpFixturePath = path.join(__dirname, '..', 'benchmarks', 'fixtures', 'server.js')
+const udpFixturePath = path.join(__dirname, '..', 'benchmarks', 'fixtures', 'udp-server.js')
 
 function hasLsof() {
   try {

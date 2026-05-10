@@ -7,9 +7,9 @@ const { tmpdir } = require('node:os')
 const path = require('node:path')
 
 const ITERATIONS = Number(process.env.ITERATIONS || 3)
-const ROOT = path.join(__dirname, '..')
-const TCP_FIXTURE = path.join(ROOT, 'fixtures', 'server.js')
-const UDP_FIXTURE = path.join(ROOT, 'fixtures', 'udp-server.js')
+const ROOT = path.join(__dirname, '..', '..')
+const TCP_FIXTURE = path.join(ROOT, 'benchmarks', 'fixtures', 'server.js')
+const UDP_FIXTURE = path.join(ROOT, 'benchmarks', 'fixtures', 'udp-server.js')
 const DEFAULT_KP = path.join(ROOT, 'bin', 'kp')
 const NATIVE_KP = nativeBinaryPath('kp-rs') || DEFAULT_KP
 const BENCHMARK_DATA_DIR = path.join(ROOT, 'benchmarks', 'data')
@@ -37,7 +37,7 @@ function nativeBinaryPath(binaryName) {
     return null
   }
 
-  const binaryPath = path.join(ROOT, 'prebuilds', platform, binaryName)
+  const binaryPath = path.join(ROOT, 'native', 'prebuilds', platform, binaryName)
   return require('node:fs').existsSync(binaryPath) ? binaryPath : null
 }
 

@@ -34,6 +34,14 @@ The implementation went through four steps:
 
 The public benchmark stays focused on the package comparison: `kill-port@2.0.1` vs `kill-port-now`.
 
+## Project layout
+
+- `bin/` contains the published CLI wrappers.
+- `benchmarks/` contains the benchmark dashboard, data, fixtures, and runner scripts.
+- `native/` contains the Rust crate and native prebuilds.
+- `scripts/` contains npm lifecycle helpers.
+- `test/` contains the Node test suite.
+
 ## Build
 
 ```sh
@@ -76,7 +84,7 @@ The benchmark runner:
 
 - builds the Rust release binaries;
 - installs `kill-port@2.0.1` in a temp directory;
-- creates temporary TCP and UDP fixture servers;
+- uses `benchmarks/fixtures/` to start temporary TCP and UDP servers;
 - measures empty-port, UDP kill, and TCP kill scenarios;
 - writes `benchmarks/data/latest.json` and `benchmarks/data/latest.js`.
 
@@ -84,15 +92,15 @@ The benchmark runner:
 
 Current bundled prebuilds:
 
-- `prebuilds/darwin-arm64/`
-- `prebuilds/darwin-x64/`
+- `native/prebuilds/darwin-arm64/`
+- `native/prebuilds/darwin-x64/`
 
 To refresh macOS arm64:
 
 ```sh
 cargo build --release --manifest-path native/Cargo.toml
-cp native/target/release/kp-rs prebuilds/darwin-arm64/kp-rs
-strip -x prebuilds/darwin-arm64/kp-rs
+cp native/target/release/kp-rs native/prebuilds/darwin-arm64/kp-rs
+strip -x native/prebuilds/darwin-arm64/kp-rs
 ```
 
 To refresh macOS x64 from Apple Silicon, use rustup's Rust compiler, not the Homebrew `rustc`:
@@ -103,8 +111,8 @@ RUSTC=$(rustup which rustc --toolchain stable) \
   rustup run stable cargo build --release \
   --manifest-path native/Cargo.toml \
   --target x86_64-apple-darwin
-cp native/target/x86_64-apple-darwin/release/kp-rs prebuilds/darwin-x64/kp-rs
-strip -x prebuilds/darwin-x64/kp-rs
+cp native/target/x86_64-apple-darwin/release/kp-rs native/prebuilds/darwin-x64/kp-rs
+strip -x native/prebuilds/darwin-x64/kp-rs
 ```
 
 ## Release
