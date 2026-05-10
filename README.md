@@ -41,37 +41,55 @@ TCP check-only rows:
 
 ### Mermaid charts
 
+Raw-scale charts hide the useful comparison because `kill-port` is around 10 seconds while the fast paths are 3–60 ms. These charts split the baseline from the fast-path zoom.
+
 ```mermaid
 xychart-beta
-  title "Empty port mean latency (ms)"
-  x-axis ["kill-port", "JS", "lsof", "netstat", "Rust"]
-  y-axis "ms" 0 --> 11200
-  bar [11032.29, 57.65, 27.53, 4.00, 3.02]
+  title "Legacy baseline: kill-port mean latency"
+  x-axis ["empty", "TCP", "UDP"]
+  y-axis "seconds" 0 --> 12
+  bar [11.03, 10.31, 10.22]
 ```
 
 ```mermaid
 xychart-beta
-  title "TCP kill mean latency (ms)"
-  x-axis ["kill-port", "JS", "lsof", "netstat", "bash", "Rust"]
-  y-axis "ms" 0 --> 10500
-  bar [10311.02, 58.44, 27.72, 4.07, 5.44, 3.24]
+  title "Empty port: fast-path zoom"
+  x-axis ["JS", "lsof", "netstat", "Rust"]
+  y-axis "ms" 0 --> 65
+  bar [57.65, 27.53, 4.00, 3.02]
 ```
 
 ```mermaid
 xychart-beta
-  title "UDP kill mean latency (ms)"
-  x-axis ["kill-port", "JS", "lsof", "netstat", "bash", "Rust"]
-  y-axis "ms" 0 --> 10500
-  bar [10219.75, 57.22, 28.62, 3.81, 5.16, 3.25]
+  title "TCP kill: fast-path zoom"
+  x-axis ["JS", "lsof", "netstat", "bash", "Rust"]
+  y-axis "ms" 0 --> 65
+  bar [58.44, 27.72, 4.07, 5.44, 3.24]
 ```
 
 ```mermaid
 xychart-beta
-  title "TCP check-only mean latency (ms)"
+  title "UDP kill: fast-path zoom"
+  x-axis ["JS", "lsof", "netstat", "bash", "Rust"]
+  y-axis "ms" 0 --> 65
+  bar [57.22, 28.62, 3.81, 5.16, 3.25]
+```
+
+```mermaid
+xychart-beta
+  title "TCP check-only paths"
   x-axis ["free bash", "free fp", "free netstat", "free lsof", "used bash", "used fp", "used netstat", "used lsof"]
   y-axis "ms" 0 --> 30
   bar [2.49, 2.13, 3.73, 27.77, 2.72, 2.25, 3.98, 28.44]
 ```
+
+Speedup over `kill-port`:
+
+| Operation | JS fallback | raw `lsof` | raw `netstat` | bash `netstat` | Rust default |
+| --- | ---: | ---: | ---: | ---: | ---: |
+| Empty port | `191x` | `401x` | `2,758x` | — | `3,653x` |
+| TCP kill | `176x` | `372x` | `2,533x` | `1,895x` | `3,182x` |
+| UDP kill | `179x` | `357x` | `2,682x` | `1,981x` | `3,145x` |
 
 Full dashboard:
 
