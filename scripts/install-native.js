@@ -36,4 +36,3 @@ if (!platform) {
 }
 
 installBinary(platform, 'kp-rs', 'kp-native')
-installBinary(platform, 'fp-rs', 'fp-native')

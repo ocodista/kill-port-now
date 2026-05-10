@@ -13,10 +13,10 @@ This document describes how to develop, benchmark, and release `kill-port-now`.
    - Linux uses `/proc`.
    - No external Rust crates.
 
-2. **Native bin wrappers**
-   - `bin/kp-native` and `bin/fp-native` are npm bin targets.
-   - `scripts/install-native.js` copies the matching prebuild into those paths during install.
-   - If no prebuild exists, wrappers fall back safely.
+2. **Native bin wrapper**
+   - `bin/kp-native` is the only npm bin target.
+   - `scripts/install-native.js` copies the matching `kp-rs` prebuild into that path during install.
+   - If no prebuild exists, the wrapper falls back safely.
 
 3. **JS API fallback**
    - `index.js` keeps the documented `kill-port` API shape.
@@ -63,7 +63,6 @@ pkg=$(npm pack | tail -1)
 tmp=$(mktemp -d)
 npm install --prefix "$tmp" -g "$pkg" --silent
 "$tmp/bin/kp" 3000
-"$tmp/bin/fp" 3000
 rm -rf "$tmp" "$pkg"
 ```
 

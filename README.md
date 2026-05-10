@@ -18,10 +18,8 @@ npm i -g kill-port-now
 
 ```sh
 kp 3000
-kill-port 3000
-kill-port-now 3000 5173
-kill-port-now --port 3000,3001 --protocol all
-fp 3000
+kp 3000 5173
+kp --port 3000,3001 --protocol all
 ```
 
 ## How much faster?
@@ -75,20 +73,15 @@ Compatibility:
 | `kill(port, 'tcp')` | Compatible |
 | `kill(port, 'udp')` | Compatible |
 | Free port rejection | Compatible |
-| CLI `kill-port <port>` | Compatible |
 | Multiple ports | Compatible |
 
-## Binaries
+## Binary
 
-The package exposes:
+The package exposes one global binary:
 
-- `kill-port`
-- `kill-port-now`
 - `kp`
-- `free-port-now`
-- `fp`
 
-`kill-port-now` uses native Rust prebuilds by default where available. Node.js 18+ is required for the package API.
+`kp` uses the native Rust prebuild by default where available. Node.js 18+ is required for the package API.
 
 ## Options
 

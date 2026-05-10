@@ -13,11 +13,7 @@
   },
   "homepage": "https://github.com/ocodista/kill-port-now#readme",
   "bin": {
-    "kill-port": "bin/kp-native",
-    "kill-port-now": "bin/kp-native",
-    "kp": "bin/kp-native",
-    "free-port-now": "bin/fp-native",
-    "fp": "bin/fp-native"
+    "kp": "bin/kp-native"
   },
   "main": "index.js",
   "types": "index.d.ts",
