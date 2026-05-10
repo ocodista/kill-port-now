@@ -1,0 +1,294 @@
+<!doctype html>
+<html lang="en" class="dark">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>kill-port-now benchmark</title>
+    <meta name="description" content="Benchmark comparing kill-port, targeted macOS lsof, kill-port-now JS, Rust kp-rs, and bash /dev/tcp checks." />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        darkMode: 'class',
+        theme: {
+          extend: {
+            fontFamily: { sans: ['Inter', 'sans-serif'] },
+            colors: {
+              page: '#08090a',
+              panel: '#0f1011',
+              elevated: '#18191b',
+              primary: '#f7f8f8',
+              secondary: '#d0d6e0',
+              muted: '#8a8f98',
+              faint: '#62666d',
+              accent: '#5e6ad2',
+              green: '#30a46c',
+              amber: '#f5a524',
+              borderSubtle: 'rgba(255,255,255,0.06)',
+              borderDefault: 'rgba(255,255,255,0.1)'
+            }
+          }
+        }
+      }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/echarts@5.5.1/dist/echarts.min.js"></script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.min.js"></script>
+    <script src="./data/latest.js"></script>
+    <style>
+      :root { color-scheme: dark; }
+      * { box-sizing: border-box; }
+      body { background: #08090a; font-feature-settings: 'cv01', 'ss03'; }
+      .chart-panel { min-height: 360px; width: 100%; }
+      ::-webkit-scrollbar { width: 8px; height: 8px; }
+      ::-webkit-scrollbar-track { background: transparent; }
+      ::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); border-radius: 4px; }
+    </style>
+  </head>
+  <body class="min-h-screen bg-page text-primary antialiased">
+    <div class="mx-auto flex max-w-7xl gap-6 px-4 py-6 lg:px-8">
+      <aside class="hidden w-64 shrink-0 lg:block">
+        <div class="sticky top-6 rounded-2xl border border-borderSubtle bg-panel p-5">
+          <div class="flex items-center gap-2 text-sm font-semibold">
+            <i data-lucide="zap" class="h-4 w-4 text-secondary"></i>
+            kill-port-now Bench
+          </div>
+          <p class="mt-2 text-xs leading-5 text-muted">
+            Single-port cleanup benchmark: legacy shell pipeline, targeted lsof, netstat, Rust native, and TCP checks.
+          </p>
+          <nav class="mt-6 space-y-1 text-sm text-secondary">
+            <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#overview">Overview</a>
+            <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#kill">Kill benchmarks</a>
+            <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#checks">TCP checks</a>
+            <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#table">Raw table</a>
+            <a class="block rounded-lg px-3 py-2 hover:bg-white/[0.04]" href="#assumptions">Assumptions</a>
+          </nav>
+        </div>
+      </aside>
+
+      <main class="min-w-0 flex-1 space-y-8">
+        <header id="overview" class="rounded-3xl border border-borderSubtle bg-panel p-6 lg:p-8">
+          <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
+            <div>
+              <div class="mb-3 inline-flex items-center gap-2 rounded-full border border-borderDefault bg-white/[0.03] px-3 py-1 text-xs text-secondary">
+                <i data-lucide="calendar-clock" class="h-3.5 w-3.5"></i>
+                <span id="generated-at">Loading snapshot…</span>
+              </div>
+              <h1 class="max-w-4xl text-4xl font-semibold tracking-[-0.04em] lg:text-6xl">
+                Killing a port should not take seconds.
+              </h1>
+              <p class="mt-4 max-w-3xl text-base leading-7 text-secondary">
+                A local macOS benchmark comparing <code>kill-port@2.0.1</code>, targeted <code>lsof</code>, no-<code>lsof</code> <code>netstat</code>, the JS fallback, native Rust <code>kp-rs</code>, and bash <code>/dev/tcp</code> checks.
+              </p>
+            </div>
+            <a href="./data/latest.json" class="inline-flex items-center justify-center gap-2 rounded-xl border border-borderDefault bg-white/[0.03] px-4 py-2 text-sm font-medium text-secondary hover:bg-white/[0.06]">
+              <i data-lucide="download" class="h-4 w-4"></i>
+              Raw JSON
+            </a>
+          </div>
+          <div id="kpis" class="mt-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4"></div>
+        </header>
+
+        <section id="kill" class="grid gap-4 lg:grid-cols-3">
+          <div class="rounded-2xl border border-borderSubtle bg-panel p-5">
+            <div class="mb-4">
+              <h2 class="text-lg font-semibold">Empty port</h2>
+              <p class="mt-1 text-sm text-muted">No listener. Lower is better.</p>
+            </div>
+            <div id="chart-empty-port" class="chart-panel"></div>
+          </div>
+          <div class="rounded-2xl border border-borderSubtle bg-panel p-5">
+            <div class="mb-4">
+              <h2 class="text-lg font-semibold">TCP kill</h2>
+              <p class="mt-1 text-sm text-muted">Temporary TCP fixture process.</p>
+            </div>
+            <div id="chart-tcp-kill" class="chart-panel"></div>
+          </div>
+          <div class="rounded-2xl border border-borderSubtle bg-panel p-5">
+            <div class="mb-4">
+              <h2 class="text-lg font-semibold">UDP kill</h2>
+              <p class="mt-1 text-sm text-muted">Temporary UDP fixture process.</p>
+            </div>
+            <div id="chart-udp-kill" class="chart-panel"></div>
+          </div>
+        </section>
+
+        <section id="checks" class="grid gap-4 lg:grid-cols-2">
+          <div class="rounded-2xl border border-borderSubtle bg-panel p-5">
+            <div class="mb-4">
+              <h2 class="text-lg font-semibold">TCP free check</h2>
+              <p class="mt-1 text-sm text-muted">Non-destructive checks. bash cannot kill; it only probes reachability.</p>
+            </div>
+            <div id="chart-tcp-check-free" class="chart-panel"></div>
+          </div>
+          <div class="rounded-2xl border border-borderSubtle bg-panel p-5">
+            <div class="mb-4">
+              <h2 class="text-lg font-semibold">TCP in-use check</h2>
+              <p class="mt-1 text-sm text-muted">Non-destructive checks against a live TCP listener.</p>
+            </div>
+            <div id="chart-tcp-check-in-use" class="chart-panel"></div>
+          </div>
+        </section>
+
+        <section id="table" class="rounded-2xl border border-borderSubtle bg-panel p-5">
+          <div class="mb-4 flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+              <h2 class="text-lg font-semibold">Benchmark rows</h2>
+              <p class="mt-1 text-sm text-muted">Mean, median, min, and max across all samples.</p>
+            </div>
+            <span id="environment" class="text-xs text-muted"></span>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="min-w-full text-left text-sm">
+              <thead class="border-b border-borderDefault text-xs uppercase tracking-wide text-faint">
+                <tr>
+                  <th class="py-3 pr-4 font-medium">Scenario</th>
+                  <th class="py-3 pr-4 font-medium">Tool</th>
+                  <th class="py-3 pr-4 font-medium">Operation</th>
+                  <th class="py-3 pr-4 font-medium">Mean</th>
+                  <th class="py-3 pr-4 font-medium">Median</th>
+                  <th class="py-3 pr-4 font-medium">Min</th>
+                  <th class="py-3 pr-4 font-medium">Max</th>
+                  <th class="py-3 pr-4 font-medium">lsof</th>
+                  <th class="py-3 pr-4 font-medium">Notes</th>
+                </tr>
+              </thead>
+              <tbody id="rows" class="divide-y divide-borderSubtle"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section id="assumptions" class="rounded-2xl border border-borderSubtle bg-panel p-5">
+          <h2 class="text-lg font-semibold">Assumptions</h2>
+          <div id="assumption-list" class="mt-4 grid gap-2 sm:grid-cols-2"></div>
+        </section>
+      </main>
+    </div>
+
+    <script>
+      const data = window.KP_BENCHMARK_DATA;
+      const toolById = Object.fromEntries(data.tools.map((tool) => [tool.id, tool]));
+      const scenarioById = Object.fromEntries(data.scenarios.map((scenario) => [scenario.id, scenario]));
+      const colorByTool = {
+        'kill-port': '#ef4444',
+        'kill-port-now-js': '#5e6ad2',
+        'macos-lsof': '#f5a524',
+        'macos-netstat': '#fb7185',
+        'bash-netstat': '#f97316',
+        'kill-port-now-rust': '#30a46c',
+        'bash-dev-tcp': '#8b5cf6',
+        'fp-rs': '#14b8a6'
+      };
+      const fmt = new Intl.NumberFormat('en-US', { maximumFractionDigits: 2 });
+
+      function rowsForScenario(id) {
+        return data.rows.filter((row) => row.scenarioId === id).sort((a, b) => b.meanMs - a.meanMs);
+      }
+
+      function fastest(id, predicate = () => true) {
+        return data.rows
+          .filter((row) => row.scenarioId === id && predicate(row))
+          .sort((a, b) => a.meanMs - b.meanMs)[0];
+      }
+
+      function speedup(slow, fast) {
+        return slow && fast ? `${fmt.format(slow.meanMs / fast.meanMs)}x` : '—';
+      }
+
+      function renderKpis() {
+        const killPortTcp = data.rows.find((row) => row.scenarioId === 'tcp-kill' && row.toolId === 'kill-port');
+        const rustTcp = data.rows.find((row) => row.scenarioId === 'tcp-kill' && row.toolId === 'kill-port-now-rust');
+        const jsTcp = data.rows.find((row) => row.scenarioId === 'tcp-kill' && row.toolId === 'kill-port-now-js');
+        const bashCheck = fastest('tcp-check-in-use');
+        const cards = [
+          ['Fastest TCP kill', toolById[rustTcp.toolId].name, `${fmt.format(rustTcp.meanMs)} ms`],
+          ['Rust vs kill-port', speedup(killPortTcp, rustTcp), 'TCP kill speedup'],
+          ['JS vs kill-port', speedup(killPortTcp, jsTcp), 'TCP kill speedup'],
+          ['Fastest TCP check', toolById[bashCheck.toolId].name, `${fmt.format(bashCheck.meanMs)} ms`]
+        ];
+        document.getElementById('kpis').innerHTML = cards.map(([label, value, detail]) => `
+          <div class="rounded-2xl border border-borderSubtle bg-white/[0.025] p-4">
+            <div class="text-xs uppercase tracking-wide text-faint">${label}</div>
+            <div class="mt-2 text-2xl font-semibold tracking-tight">${value}</div>
+            <div class="mt-1 text-xs text-muted">${detail}</div>
+          </div>
+        `).join('');
+      }
+
+      function renderChart(id) {
+        const rows = rowsForScenario(id);
+        const element = document.getElementById(`chart-${id}`);
+        const chart = echarts.init(element);
+        chart.setOption({
+          grid: { left: 8, right: 24, top: 8, bottom: 8, containLabel: true },
+          tooltip: {
+            trigger: 'axis',
+            axisPointer: { type: 'shadow' },
+            formatter: (items) => {
+              const item = items[0];
+              const row = rows[item.dataIndex];
+              return `${toolById[row.toolId].name}<br/>mean: ${fmt.format(row.meanMs)} ms<br/>median: ${fmt.format(row.medianMs)} ms<br/>${row.commandLabel}`;
+            }
+          },
+          xAxis: {
+            type: 'log',
+            min: 1,
+            axisLabel: { color: '#8a8f98', formatter: (value) => `${fmt.format(value)} ms` },
+            splitLine: { lineStyle: { color: 'rgba(255,255,255,0.06)' } }
+          },
+          yAxis: {
+            type: 'category',
+            data: rows.map((row) => toolById[row.toolId].name),
+            axisLabel: { color: '#d0d6e0' },
+            axisLine: { show: false },
+            axisTick: { show: false }
+          },
+          series: [{
+            type: 'bar',
+            data: rows.map((row) => ({ value: row.meanMs, itemStyle: { color: colorByTool[row.toolId] || '#5e6ad2' } })),
+            label: { show: true, position: 'right', color: '#d0d6e0', formatter: ({ value }) => `${fmt.format(value)} ms` },
+            barWidth: 18
+          }]
+        });
+        window.addEventListener('resize', () => chart.resize());
+      }
+
+      function renderTable() {
+        document.getElementById('rows').innerHTML = data.rows
+          .map((row) => {
+            const tool = toolById[row.toolId];
+            const scenario = scenarioById[row.scenarioId];
+            return `
+              <tr class="align-top hover:bg-white/[0.025]">
+                <td class="py-3 pr-4 text-secondary">${scenario.name}</td>
+                <td class="py-3 pr-4"><span class="mr-2 inline-block h-2.5 w-2.5 rounded-full" style="background:${colorByTool[row.toolId]}"></span>${tool.name}</td>
+                <td class="py-3 pr-4 text-muted">${row.operation}${row.protocol ? ` · ${row.protocol}` : ''}</td>
+                <td class="py-3 pr-4 font-medium">${fmt.format(row.meanMs)} ms</td>
+                <td class="py-3 pr-4 text-secondary">${fmt.format(row.medianMs)} ms</td>
+                <td class="py-3 pr-4 text-secondary">${fmt.format(row.minMs)} ms</td>
+                <td class="py-3 pr-4 text-secondary">${fmt.format(row.maxMs)} ms</td>
+                <td class="py-3 pr-4 text-secondary">${tool.usesLsof ? 'yes' : 'no'}</td>
+                <td class="max-w-sm py-3 pr-4 text-muted">${(row.notes || []).join(' ')}</td>
+              </tr>
+            `;
+          })
+          .join('');
+      }
+
+      function renderAssumptions() {
+        document.getElementById('assumption-list').innerHTML = data.assumptions.map((item) => `
+          <div class="rounded-xl border border-borderSubtle bg-white/[0.025] p-3 text-sm leading-6 text-secondary">${item}</div>
+        `).join('');
+      }
+
+      document.getElementById('generated-at').textContent = `${new Date(data.environment.generatedAt).toLocaleString()} · ${data.environment.iterations} iterations`;
+      document.getElementById('environment').textContent = `${data.environment.os} ${data.environment.arch} · ${data.environment.node}`;
+      renderKpis();
+      ['empty-port', 'tcp-kill', 'udp-kill', 'tcp-check-free', 'tcp-check-in-use'].forEach(renderChart);
+      renderTable();
+      renderAssumptions();
+      lucide.createIcons();
+    </script>
+  </body>
+</html>

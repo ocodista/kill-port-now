@@ -1,0 +1,58 @@
+#!/usr/bin/env node
+'use strict'
+
+const net = require('node:net')
+
+function parsePort(value) {
+  const text = String(value ?? '').trim()
+  if (!/^\d+$/.test(text)) {
+    throw new Error('Invalid port number')
+  }
+
+  const port = Number(text)
+  if (!Number.isSafeInteger(port) || port < 1 || port > 65535) {
+    throw new Error('Invalid port number')
+  }
+
+  return port
+}
+
+function canBind(host, port) {
+  return new Promise((resolve) => {
+    const server = net.createServer()
+    server.once('error', (error) => {
+      if (error && typeof error === 'object' && error.code === 'EADDRINUSE') {
+        resolve(false)
+        return
+      }
+
+      resolve(false)
+    })
+    server.listen(port, host, () => {
+      server.close(() => resolve(true))
+    })
+  })
+}
+
+async function main() {
+  const port = parsePort(process.argv[2])
+  const ipv4Free = await canBind('0.0.0.0', port)
+  const ipv6Free = await canBind('::', port)
+
+  if (ipv4Free && ipv6Free) {
+    console.log('Port is free')
+    return 0
+  }
+
+  console.log('Port is in use')
+  return 1
+}
+
+main()
+  .then((code) => {
+    process.exitCode = code
+  })
+  .catch((error) => {
+    console.error(error instanceof Error ? error.message : String(error))
+    process.exitCode = 2
+  })

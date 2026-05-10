@@ -15,10 +15,10 @@ case "$os:$arch" in
 esac
 
 if [ -n "$platform" ]; then
-  native="$root_dir/prebuilds/$platform/kp-rs"
+  native="$root_dir/prebuilds/$platform/fp-rs"
   if [ -x "$native" ]; then
     exec "$native" "$@"
   fi
 fi
 
-exec node "$script_dir/kp-js" "$@"
+exec node "$script_dir/fp-js" "$@"

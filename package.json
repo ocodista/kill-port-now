@@ -1,7 +1,7 @@
 {
   "name": "kill-port-now",
   "version": "0.1.0",
-  "description": "API-compatible, zero-dependency, fast kill-port replacement.",
+  "description": "API-compatible kill-port replacement with a no-dependency Rust CLI.",
   "license": "MIT",
   "author": "Caio Borghi",
   "repository": {
@@ -13,22 +13,28 @@
   },
   "homepage": "https://github.com/ocodista/kill-port-now#readme",
   "bin": {
-    "kill-port": "bin/kp",
-    "kill-port-now": "bin/kp",
-    "kp": "bin/kp"
+    "kill-port": "bin/kp-native",
+    "kill-port-now": "bin/kp-native",
+    "kp": "bin/kp-native",
+    "free-port-now": "bin/fp-native",
+    "fp": "bin/fp-native"
   },
   "main": "index.js",
   "types": "index.d.ts",
   "files": [
     "bin/",
     "bench/",
+    "benchmarks/",
     "native/",
+    "prebuilds/",
+    "scripts/",
     "index.js",
     "index.d.ts",
     "README.md",
     "LICENSE"
   ],
   "scripts": {
+    "postinstall": "node scripts/install-native.js",
     "test": "node --test",
     "bench": "node bench/bench.js",
     "bench:native": "node bench/compare-native.js",
@@ -42,6 +48,7 @@
     "process",
     "cli",
     "lsof",
+    "rust",
     "dev-server"
   ],
   "engines": {
