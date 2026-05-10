@@ -1,6 +1,6 @@
 {
   "name": "kill-port-now",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "API-compatible kill-port replacement that's 3000x+ faster.",
   "license": "MIT",
   "author": "Caio Borghi",
