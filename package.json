@@ -1,7 +1,7 @@
 {
   "name": "kill-port-now",
   "version": "0.1.0",
-  "description": "A tiny, zero-dependency, fast kill-port CLI.",
+  "description": "API-compatible, zero-dependency, fast kill-port replacement.",
   "license": "MIT",
   "author": "Caio Borghi",
   "repository": {

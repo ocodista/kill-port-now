@@ -1,6 +1,8 @@
 # kill-port-now
 
-Tiny, zero-dependency `kill-port` replacement optimized for dev-server cleanup.
+Tiny, zero-dependency, API-compatible `kill-port` replacement optimized for dev-server cleanup.
+
+Use it as a drop-in for documented `kill-port` calls on macOS/Linux: `kill(port)` and `kill(port, 'udp')`. If you inspect the resolved value, `kill-port-now` returns a structured result.
 
 `kill-port@2.0.1` scans every open socket, then runs `lsof | grep | awk | xargs kill -9`. `kill-port-now` does one targeted `lsof` lookup and kills PIDs directly from Node.
 
@@ -62,14 +64,14 @@ await killPort(3000, 'udp')
 await killPort.killPorts([3000, 5173], { protocol: 'all' })
 ```
 
-## `kill-port` compatibility
+## API compatibility
 
 | Behavior | Status |
 | --- | --- |
-| `require('kill-port-now')(port)` | Compatible |
-| `kill(port, 'tcp' | 'udp')` | Compatible |
+| `require('kill-port-now')(port)` | API-compatible |
+| `kill(port, 'tcp' | 'udp')` | API-compatible |
+| Free port rejection | API-compatible |
 | `kill-port`, `kill-port-now`, `kp` bins | Supported |
-| Free port rejection | Compatible |
 | Success return value | Different: structured result |
 | Windows | Not supported |
 
