@@ -2,7 +2,11 @@
 
 API-compatible `kill-port` replacement that is thousands of times faster.
 
-`kill-port@2.0.1` has 1M+ weekly downloads, but a single port kill can take ~10 seconds on macOS. `kill-port-now` keeps the documented `kill-port` API and uses a no-dependency Rust CLI by default.
+[`kill-port@2.0.1`](https://www.npmjs.com/package/kill-port) has 1M+ weekly downloads, but a single port kill can take ~10 seconds on macOS. `kill-port-now` keeps the documented `kill-port` API and uses a no-dependency Rust CLI by default.
+
+[![kill-port npm weekly downloads](assets/kill-port-npm-weekly-downloads.png)](https://www.npmjs.com/package/kill-port)
+
+Source: [npm package page](https://www.npmjs.com/package/kill-port) · [npm downloads API](https://api.npmjs.org/downloads/point/last-week/kill-port)
 
 ## Install
 
