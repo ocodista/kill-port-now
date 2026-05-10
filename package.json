@@ -1,6 +1,6 @@
 {
   "name": "kill-port-now",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "API-compatible kill-port replacement that's 3000x+ faster.",
   "license": "MIT",
   "author": "Caio Borghi",
@@ -22,7 +22,6 @@
     "benchmarks/",
     "docs/",
     "native/",
-    "scripts/",
     "index.js",
     "index.d.ts",
     "logo.png",
@@ -30,7 +29,6 @@
     "LICENSE"
   ],
   "scripts": {
-    "postinstall": "node scripts/install-native.js",
     "test": "node --test",
     "bench": "node benchmarks/scripts/lookup-baseline.js",
     "bench:native": "node benchmarks/scripts/compare-native.js",

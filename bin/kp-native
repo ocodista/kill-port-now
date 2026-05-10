@@ -1,6 +1,17 @@
 #!/bin/sh
 
-script_dir=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+bin_path=$0
+while [ -h "$bin_path" ]; do
+  bin_dir=$(CDPATH= cd -- "$(dirname -- "$bin_path")" && pwd)
+  link_target=$(readlink "$bin_path")
+
+  case "$link_target" in
+    /*) bin_path=$link_target ;;
+    *) bin_path=$bin_dir/$link_target ;;
+  esac
+done
+
+script_dir=$(CDPATH= cd -- "$(dirname -- "$bin_path")" && pwd)
 root_dir=$(CDPATH= cd -- "$script_dir/.." && pwd)
 
 os=$(uname -s 2>/dev/null || echo unknown)

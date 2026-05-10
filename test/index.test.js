@@ -2,7 +2,9 @@
 
 const assert = require('node:assert/strict')
 const { execFileSync, fork } = require('node:child_process')
+const { mkdtempSync, readFileSync, rmSync, symlinkSync } = require('node:fs')
 const net = require('node:net')
+const os = require('node:os')
 const path = require('node:path')
 const test = require('node:test')
 const {
@@ -12,6 +14,8 @@ const {
   parsePorts
 } = require('../index.js')
 
+const packageJsonPath = path.join(__dirname, '..', 'package.json')
+const kpWrapperPath = path.join(__dirname, '..', 'bin', 'kp-native')
 const tcpFixturePath = path.join(__dirname, '..', 'benchmarks', 'fixtures', 'server.js')
 const udpFixturePath = path.join(__dirname, '..', 'benchmarks', 'fixtures', 'udp-server.js')
 
@@ -102,6 +106,29 @@ async function waitForPid(port, pid, method = 'tcp') {
 
   return findPidsForPort(port, method)
 }
+
+test('package metadata does not define npm install lifecycle scripts', () => {
+  const packageJson = JSON.parse(readFileSync(packageJsonPath, 'utf8'))
+  const scripts = packageJson.scripts ?? {}
+
+  for (const scriptName of ['preinstall', 'install', 'postinstall']) {
+    assert.equal(scripts[scriptName], undefined, `${scriptName} should not be defined`)
+  }
+})
+
+test('kp wrapper resolves npm-style bin symlinks', () => {
+  const tempDirectory = mkdtempSync(path.join(os.tmpdir(), 'kp-bin-'))
+
+  try {
+    const symlinkPath = path.join(tempDirectory, 'kp')
+    symlinkSync(kpWrapperPath, symlinkPath)
+
+    const output = execFileSync(symlinkPath, ['--help'], { encoding: 'utf8' })
+    assert.match(output, /Usage:/)
+  } finally {
+    rmSync(tempDirectory, { recursive: true, force: true })
+  }
+})
 
 test('parsePort accepts valid port numbers', () => {
   assert.equal(parsePort(3000), 3000)

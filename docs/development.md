@@ -15,7 +15,8 @@ This document describes how to develop, benchmark, and release `kill-port-now`.
 
 2. **Native bin wrapper**
    - `bin/kp-native` is the only npm bin target.
-   - `scripts/install-native.js` copies the matching `kp-rs` prebuild into that path during install.
+   - It selects the matching bundled `native/prebuilds/*/kp-rs` binary at runtime.
+   - No npm install lifecycle scripts are required or published.
    - If no prebuild exists, the wrapper falls back safely.
 
 3. **JS API fallback**
@@ -39,7 +40,6 @@ The public benchmark stays focused on the package comparison: `kill-port@2.0.1` 
 - `bin/` contains the published CLI wrappers.
 - `benchmarks/` contains the benchmark dashboard, data, fixtures, and runner scripts.
 - `native/` contains the Rust crate and native prebuilds.
-- `scripts/` contains npm lifecycle helpers.
 - `test/` contains the Node test suite.
 
 ## Build

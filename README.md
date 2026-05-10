@@ -14,6 +14,8 @@ npm i -g kill-port-now
 
 Node.js 18+ is required for the package API.
 
+The package does not run `preinstall`, `install`, or `postinstall` scripts. The `kp` wrapper selects the bundled native binary at runtime and falls back to Node when needed.
+
 ## CLI
 
 ```sh
@@ -38,6 +40,12 @@ await kill(3000, { protocol: 'all', signal: 'SIGTERM' })
 
 ## Benchmark
 
+Watch `kill-port-now` recover a dev server while `kill-port` kills the wrong one:
+
+![Side-by-side terminal comparison of kill-port and kill-port-now](./docs/assets/diff-demo.gif)
+
+[Download the MP4](./docs/assets/diff-demo.mp4).
+
 Local macOS benchmark, 3 iterations. Lower latency is better.
 
 | Operation | `kill-port` | `kill-port-now` | Faster |
@@ -48,11 +56,10 @@ Local macOS benchmark, 3 iterations. Lower latency is better.
 
 ```mermaid
 xychart-beta
-    title "Benchmark latency (ms)"
+    title "Speedup over kill-port"
     x-axis ["Empty port", "UDP kill", "TCP kill"]
-    y-axis "Latency (ms)" 0 --> 12000
-    bar "kill-port" [11032.29, 10219.75, 10311.02]
-    bar "kill-port-now" [3.02, 3.25, 3.24]
+    y-axis "Faster (x)" 0 --> 4000
+    bar [3653, 3140, 3185]
 ```
 
 ```sh
