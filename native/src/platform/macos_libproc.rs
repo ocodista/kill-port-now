@@ -1,6 +1,7 @@
-use crate::Protocol;
-use std::ffi::c_void;
+use crate::core::{PortProcess, ProcessProtocol, Protocol};
+use std::ffi::{c_void, CStr};
 use std::mem::{size_of, MaybeUninit};
+use std::os::raw::c_char;
 
 const PROC_ALL_PIDS: u32 = 1;
 const PROC_PIDLISTFDS: i32 = 1;
@@ -128,40 +129,26 @@ struct SocketFdInfo {
 
 extern "C" {
     fn proc_listpids(type_: u32, typeinfo: u32, buffer: *mut c_void, buffersize: i32) -> i32;
-    fn proc_pidinfo(
-        pid: i32,
-        flavor: i32,
-        arg: u64,
-        buffer: *mut c_void,
-        buffersize: i32,
-    ) -> i32;
-    fn proc_pidfdinfo(
-        pid: i32,
-        fd: i32,
-        flavor: i32,
-        buffer: *mut c_void,
-        buffersize: i32,
-    ) -> i32;
+    fn proc_pidinfo(pid: i32, flavor: i32, arg: u64, buffer: *mut c_void, buffersize: i32) -> i32;
+    fn proc_pidfdinfo(pid: i32, fd: i32, flavor: i32, buffer: *mut c_void, buffersize: i32) -> i32;
+    fn proc_name(pid: i32, buffer: *mut c_void, buffersize: u32) -> i32;
+    fn proc_pidpath(pid: i32, buffer: *mut c_void, buffersize: u32) -> i32;
 }
 
-pub fn find_pids_by_port(port: u16, protocol: Protocol) -> Result<Vec<i32>, String> {
+pub fn find_port_processes(port: u16, protocol: Protocol) -> Result<Vec<PortProcess>, String> {
     validate_layout();
 
     let pids = list_pids();
     let mut matches = Vec::new();
 
     for pid in pids {
-        if pid <= 0 || pid == std::process::id() as i32 {
+        if pid == 0 || pid == std::process::id() {
             continue;
         }
 
-        if pid_has_port(pid, port, protocol) {
-            matches.push(pid);
-        }
+        matches.extend(pid_port_processes(pid, port, protocol));
     }
 
-    matches.sort_unstable();
-    matches.dedup();
     Ok(matches)
 }
 
@@ -176,7 +163,7 @@ fn validate_layout() {
     debug_assert_eq!(size_of::<SocketFdInfo>(), 792);
 }
 
-fn list_pids() -> Vec<i32> {
+fn list_pids() -> Vec<u32> {
     let mut capacity = 4096usize;
 
     loop {
@@ -197,15 +184,20 @@ fn list_pids() -> Vec<i32> {
         let count = bytes as usize / size_of::<i32>();
         if count < capacity {
             pids.truncate(count);
-            return pids.into_iter().filter(|pid| *pid > 0).collect();
+            return pids
+                .into_iter()
+                .filter_map(|pid| u32::try_from(pid).ok())
+                .filter(|pid| *pid > 0)
+                .collect();
         }
 
         capacity *= 2;
     }
 }
 
-fn pid_has_port(pid: i32, port: u16, protocol: Protocol) -> bool {
+fn pid_port_processes(pid: u32, port: u16, protocol: Protocol) -> Vec<PortProcess> {
     let fds = list_fds(pid);
+    let mut protocols = Vec::new();
 
     for fd in fds {
         if fd.proc_fdtype != PROX_FDTYPE_SOCKET {
@@ -213,17 +205,28 @@ fn pid_has_port(pid: i32, port: u16, protocol: Protocol) -> bool {
         }
 
         if let Some(socket) = socket_fdinfo(pid, fd.proc_fd) {
-            if socket_matches(&socket.psi, port, protocol) {
-                return true;
+            if let Some(process_protocol) = socket_match_protocol(&socket.psi, port, protocol) {
+                protocols.push(process_protocol);
             }
         }
     }
 
-    false
+    if protocols.is_empty() {
+        return Vec::new();
+    }
+
+    let (command, path) = process_metadata(pid);
+    protocols
+        .into_iter()
+        .map(|process_protocol| {
+            PortProcess::new(pid, port, process_protocol)
+                .with_metadata(command.clone(), path.clone())
+        })
+        .collect()
 }
 
-fn list_fds(pid: i32) -> Vec<ProcFdInfo> {
-    let bytes = unsafe { proc_pidinfo(pid, PROC_PIDLISTFDS, 0, std::ptr::null_mut(), 0) };
+fn list_fds(pid: u32) -> Vec<ProcFdInfo> {
+    let bytes = unsafe { proc_pidinfo(pid as i32, PROC_PIDLISTFDS, 0, std::ptr::null_mut(), 0) };
     if bytes <= 0 {
         return Vec::new();
     }
@@ -233,10 +236,16 @@ fn list_fds(pid: i32) -> Vec<ProcFdInfo> {
         return Vec::new();
     }
 
-    let mut fds = vec![ProcFdInfo { proc_fd: 0, proc_fdtype: 0 }; count];
+    let mut fds = vec![
+        ProcFdInfo {
+            proc_fd: 0,
+            proc_fdtype: 0
+        };
+        count
+    ];
     let bytes = unsafe {
         proc_pidinfo(
-            pid,
+            pid as i32,
             PROC_PIDLISTFDS,
             0,
             fds.as_mut_ptr().cast::<c_void>(),
@@ -253,11 +262,11 @@ fn list_fds(pid: i32) -> Vec<ProcFdInfo> {
     fds
 }
 
-fn socket_fdinfo(pid: i32, fd: i32) -> Option<SocketFdInfo> {
+fn socket_fdinfo(pid: u32, fd: i32) -> Option<SocketFdInfo> {
     let mut info = MaybeUninit::<SocketFdInfo>::zeroed();
     let bytes = unsafe {
         proc_pidfdinfo(
-            pid,
+            pid as i32,
             fd,
             PROC_PIDFDSOCKETINFO,
             info.as_mut_ptr().cast::<c_void>(),
@@ -272,11 +281,23 @@ fn socket_fdinfo(pid: i32, fd: i32) -> Option<SocketFdInfo> {
     }
 }
 
-fn socket_matches(socket: &SocketInfo, port: u16, protocol: Protocol) -> bool {
+fn socket_match_protocol(
+    socket: &SocketInfo,
+    port: u16,
+    protocol: Protocol,
+) -> Option<ProcessProtocol> {
     match protocol {
-        Protocol::Tcp => tcp_socket_matches(socket, port),
-        Protocol::Udp => udp_socket_matches(socket, port),
-        Protocol::All => tcp_socket_matches(socket, port) || udp_socket_matches(socket, port),
+        Protocol::Tcp => tcp_socket_matches(socket, port).then_some(ProcessProtocol::Tcp),
+        Protocol::Udp => udp_socket_matches(socket, port).then_some(ProcessProtocol::Udp),
+        Protocol::All => {
+            if tcp_socket_matches(socket, port) {
+                Some(ProcessProtocol::Tcp)
+            } else if udp_socket_matches(socket, port) {
+                Some(ProcessProtocol::Udp)
+            } else {
+                None
+            }
+        }
     }
 }
 
@@ -301,4 +322,55 @@ fn udp_socket_matches(socket: &SocketInfo, port: u16) -> bool {
 fn port_matches(raw_port: i32, expected: u16) -> bool {
     let raw = raw_port as u16;
     raw == expected || u16::from_be(raw) == expected
+}
+
+fn process_metadata(pid: u32) -> (Option<String>, Option<String>) {
+    (process_command(pid), process_path(pid))
+}
+
+fn process_command(pid: u32) -> Option<String> {
+    let mut buffer = [0 as c_char; 1024];
+    let bytes = unsafe {
+        proc_name(
+            pid as i32,
+            buffer.as_mut_ptr().cast::<c_void>(),
+            buffer.len() as u32,
+        )
+    };
+
+    if bytes <= 0 {
+        return None;
+    }
+
+    c_string_from_buffer(&buffer)
+}
+
+fn process_path(pid: u32) -> Option<String> {
+    let mut buffer = [0 as c_char; 4096];
+    let bytes = unsafe {
+        proc_pidpath(
+            pid as i32,
+            buffer.as_mut_ptr().cast::<c_void>(),
+            buffer.len() as u32,
+        )
+    };
+
+    if bytes <= 0 {
+        return None;
+    }
+
+    c_string_from_buffer(&buffer)
+}
+
+fn c_string_from_buffer(buffer: &[c_char]) -> Option<String> {
+    let value = unsafe { CStr::from_ptr(buffer.as_ptr()) }
+        .to_string_lossy()
+        .trim()
+        .to_string();
+
+    if value.is_empty() {
+        None
+    } else {
+        Some(value)
+    }
 }

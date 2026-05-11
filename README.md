@@ -2,9 +2,9 @@
 
 # kill-port-now
 
-Kill the process listening on a port in milliseconds.
+Free a local port in milliseconds.
 
-`kill-port-now` is an API-compatible replacement for [`kill-port`](https://www.npmjs.com/package/kill-port). It keeps the familiar Node API, adds a short `kp` CLI, and uses a native Rust binary when available with a dependency-free Node fallback.
+`kill-port-now` is an API-compatible replacement for [`kill-port`](https://www.npmjs.com/package/kill-port). It keeps the familiar Node API, adds a short `kp` CLI, and uses one native Rust binary for lookup and killing.
 
 ## Install
 
@@ -14,28 +14,45 @@ npm i -g kill-port-now
 
 Node.js 18+ is required for the package API.
 
-The package does not run `preinstall`, `install`, or `postinstall` scripts. The `kp` wrapper selects the bundled native binary at runtime and falls back to Node when needed.
+The package does not run `preinstall`, `install`, or `postinstall` scripts. The `kp` launcher selects the bundled native binary at runtime. If a release is missing the native binary for your platform, it fails loudly instead of falling back to shell tools.
 
 ## CLI
 
 ```sh
 kp 3000
 kp 3000 5173
-kp --port 3000,3001 --protocol all
-kp --dry-run --verbose 3000
+kp 3000 --dry-run --json
+kp 3000 --tcp-only
+kp 3000 --udp-only
+kp 3000 --graceful --graceful-timeout 300
 ```
 
-TCP is the default protocol. Use `--protocol udp` for UDP sockets or `--protocol all` to check both. Run `kp --help` for every option.
+By default, `kp 3000` kills every process holding local port `3000`, across TCP and UDP. Protocol filters are escape hatches: use `--tcp-only` or `--udp-only` only when you need them. Run `kp --help` for every option.
 
 ## Node API
 
 ```js
 const kill = require('kill-port-now')
+const { findPortProcesses } = require('kill-port-now')
 
 await kill(3000)
-await kill(3000, 'tcp')
-await kill(3000, 'udp')
-await kill(3000, { protocol: 'all', signal: 'SIGTERM' })
+await kill(3000, 'udp') // legacy kill-port method argument still works
+await kill(3000, { signal: 'SIGTERM' })
+await kill(3000, { graceful: true, gracefulTimeoutMs: 300 })
+
+const processes = await findPortProcesses(3000)
+```
+
+`findPortProcesses()` returns process metadata when the native backend can provide it:
+
+```ts
+type PortProcess = {
+  pid: number
+  port: number
+  protocol: 'tcp' | 'udp'
+  command?: string
+  path?: string
+}
 ```
 
 ## Benchmark
@@ -69,7 +86,7 @@ open benchmarks/index.html
 
 ## Development
 
-See [docs/development.md](docs/development.md) for architecture, benchmarks, native prebuilds, fallback paths, and release steps.
+See [docs/development.md](docs/development.md) for architecture, benchmarks, native prebuilds, and release steps.
 
 ## License
 

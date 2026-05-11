@@ -5,13 +5,13 @@ const { execFileSync, fork, spawnSync } = require('node:child_process')
 const { mkdirSync, mkdtempSync, rmSync, writeFileSync } = require('node:fs')
 const { tmpdir } = require('node:os')
 const path = require('node:path')
+const { nativeBinaryPath } = require('../../native-binary.js')
 
 const ITERATIONS = Number(process.env.ITERATIONS || 3)
 const ROOT = path.join(__dirname, '..', '..')
 const TCP_FIXTURE = path.join(ROOT, 'benchmarks', 'fixtures', 'server.js')
 const UDP_FIXTURE = path.join(ROOT, 'benchmarks', 'fixtures', 'udp-server.js')
-const DEFAULT_KP = path.join(ROOT, 'bin', 'kp')
-const NATIVE_KP = nativeBinaryPath('kp-rs') || DEFAULT_KP
+const DEFAULT_KP = path.join(ROOT, 'bin', 'kp.js')
 const BENCHMARK_DATA_DIR = path.join(ROOT, 'benchmarks', 'data')
 
 const SCENARIOS = [
@@ -24,22 +24,6 @@ const TOOLS = [
   { id: 'kill-port', name: 'kill-port', usesLsof: true, usesShellPipeline: true, native: false },
   { id: 'kill-port-now', name: 'kill-port-now', usesLsof: false, usesShellPipeline: false, native: true }
 ]
-
-function nativeBinaryPath(binaryName) {
-  const platformByKey = {
-    'darwin:arm64': 'darwin-arm64',
-    'darwin:x64': 'darwin-x64',
-    'linux:x64': 'linux-x64',
-    'linux:arm64': 'linux-arm64'
-  }
-  const platform = platformByKey[`${process.platform}:${process.arch}`]
-  if (!platform) {
-    return null
-  }
-
-  const binaryPath = path.join(ROOT, 'native', 'prebuilds', platform, binaryName)
-  return require('node:fs').existsSync(binaryPath) ? binaryPath : null
-}
 
 function commandOutput(command, args) {
   try {
@@ -267,8 +251,8 @@ function benchmarkDefinitions(oldCli, currentCli) {
       operation: 'kill',
       protocol: 'udp',
       destructive: true,
-      commandLabel: 'bin/kp --quiet --method udp <port>',
-      sample: () => sampleKill(UDP_FIXTURE, (port) => run(currentCli[0], [...currentCli[1], '--method', 'udp', String(port)]).ms)
+      commandLabel: 'bin/kp --quiet --udp-only <port>',
+      sample: () => sampleKill(UDP_FIXTURE, (port) => run(currentCli[0], [...currentCli[1], '--udp-only', String(port)]).ms)
     },
     {
       scenarioId: 'tcp-kill',
@@ -297,7 +281,7 @@ async function main() {
 
   try {
     const oldCli = ['node', [killPort.cli]]
-    const currentCli = [NATIVE_KP, ['--quiet']]
+    const currentCli = [nativeBinaryPath(ROOT) || DEFAULT_KP, ['--quiet']]
     const rows = []
 
     for (const definition of benchmarkDefinitions(oldCli, currentCli)) {

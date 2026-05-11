@@ -1,6 +1,6 @@
 {
   "name": "kill-port-now",
-  "version": "1.0.2",
+  "version": "1.1.0",
   "description": "API-compatible kill-port replacement that's 3000x+ faster.",
   "license": "MIT",
   "author": "Caio Borghi",
@@ -13,7 +13,7 @@
   },
   "homepage": "https://github.com/ocodista/kill-port-now#readme",
   "bin": {
-    "kp": "bin/kp-native"
+    "kp": "bin/kp.js"
   },
   "main": "index.js",
   "types": "index.d.ts",
@@ -24,6 +24,7 @@
     "native/",
     "index.js",
     "index.d.ts",
+    "native-binary.js",
     "logo.png",
     "README.md",
     "LICENSE"
@@ -41,7 +42,7 @@
     "port",
     "process",
     "cli",
-    "lsof",
+    "native",
     "rust",
     "dev-server"
   ],
@@ -50,6 +51,7 @@
   },
   "os": [
     "darwin",
-    "linux"
+    "linux",
+    "win32"
   ]
 }

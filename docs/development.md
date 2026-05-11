@@ -4,40 +4,43 @@ This document describes how to develop, benchmark, and release `kill-port-now`.
 
 ## Architecture
 
-`kill-port-now` has three layers:
+`kill-port-now` has two layers:
 
-1. **Native CLI**
-   - `native/src/bin/kp.rs` kills processes by port.
+1. **Native binary**
+   - `native/src/bin/kp.rs` frees ports by killing matching processes.
    - `native/src/bin/fp.rs` checks whether a TCP port is free.
+   - `native/src/core/` validates ports, normalizes protocols/signals, deduplicates processes, and owns kill helpers.
+   - `native/src/platform/` contains the platform-specific socket lookup implementations.
    - macOS uses `libproc`.
-   - Linux uses `/proc`.
-   - No external Rust crates.
+   - Linux uses `/proc/net/*` plus `/proc/<pid>/fd` inode mapping.
+   - Windows uses `iphlpapi.dll` tables and `TerminateProcess()`.
 
-2. **Native bin wrapper**
-   - `bin/kp-native` is the only npm bin target.
-   - It selects the matching bundled `native/prebuilds/*/kp-rs` binary at runtime.
-   - No npm install lifecycle scripts are required or published.
-   - If no prebuild exists, the wrapper falls back safely.
-
-3. **JS API fallback**
+2. **Node launcher/API**
+   - `bin/kp.js` is the npm bin target.
    - `index.js` keeps the documented `kill-port` API shape.
-   - `bin/kp-js` is the dependency-free Node CLI fallback.
-   - It uses one targeted lookup instead of the old full socket scan.
+   - Both call the native binary and parse its JSON output.
+   - There is no `lsof`, shell, or JS kill fallback. Missing native binaries fail loudly.
 
-## Development path
+The package does not run `preinstall`, `install`, or `postinstall` scripts.
 
-The implementation went through four steps:
+## Product model
 
-1. Started with an API-compatible JS replacement.
-2. Optimized the JS path with targeted `lsof`.
-3. Explored no-`lsof` native lookup paths.
-4. Settled on the native `kp` implementation.
+Ports are user-facing; protocols are implementation details. The default command:
 
-The public benchmark stays focused on the package comparison: `kill-port@2.0.1` vs `kill-port-now`.
+```sh
+kp 3000
+```
+
+means “free local port 3000” across TCP and UDP. Protocol filters are escape hatches:
+
+```sh
+kp 3000 --tcp-only
+kp 3000 --udp-only
+```
 
 ## Project layout
 
-- `bin/` contains the published CLI wrappers.
+- `bin/` contains the published Node launcher.
 - `benchmarks/` contains the benchmark dashboard, data, fixtures, and runner scripts.
 - `native/` contains the Rust crate and native prebuilds.
 - `test/` contains the Node test suite.
@@ -58,8 +61,9 @@ native/target/release/fp-rs 3000
 ## Test
 
 ```sh
-npm test
+cargo test --manifest-path native/Cargo.toml
 cargo build --release --manifest-path native/Cargo.toml
+npm test
 npm run pack:dry
 ```
 
@@ -69,7 +73,7 @@ Test a packed install:
 pkg=$(npm pack | tail -1)
 tmp=$(mktemp -d)
 npm install --prefix "$tmp" -g "$pkg" --silent
-"$tmp/bin/kp" 3000
+"$tmp/bin/kp" 3000 --dry-run --json
 rm -rf "$tmp" "$pkg"
 ```
 
@@ -95,6 +99,17 @@ Current bundled prebuilds:
 - `native/prebuilds/darwin-arm64/`
 - `native/prebuilds/darwin-x64/`
 
+Target prebuild names:
+
+- `darwin-arm64`
+- `darwin-x64`
+- `linux-x64-gnu`
+- `linux-arm64-gnu`
+- `linux-x64-musl`
+- `linux-arm64-musl`
+- `windows-x64-msvc`
+- `windows-arm64-msvc`
+
 To refresh macOS arm64:
 
 ```sh
@@ -118,8 +133,9 @@ strip -x native/prebuilds/darwin-x64/kp-rs
 ## Release
 
 ```sh
-npm test
+cargo test --manifest-path native/Cargo.toml
 cargo build --release --manifest-path native/Cargo.toml
+npm test
 npm run bench:native
 npm run pack:dry
 npm publish --dry-run

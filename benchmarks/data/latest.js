@@ -114,7 +114,7 @@ window.KP_BENCHMARK_DATA = {
       "protocol": "udp",
       "destructive": true,
       "validForKillComparison": true,
-      "commandLabel": "bin/kp --quiet --method udp <port>",
+      "commandLabel": "bin/kp --quiet --udp-only <port>",
       "notes": [],
       "samples": [
         3.036,
