@@ -306,7 +306,7 @@ test('kp --json prints kill results', async (t) => {
   assertForcefulExit(exit)
 })
 
-test('kp --graceful escalates after the graceful timeout', async (t) => {
+test('kp --graceful escalates after the graceful timeout', { skip: process.platform === 'win32' }, async (t) => {
   const { child, port } = await startServer(stubbornFixturePath)
   t.after(() => {
     if (!child.killed) {
