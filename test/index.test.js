@@ -21,6 +21,9 @@ const tcpFixturePath = path.join(__dirname, '..', 'benchmarks', 'fixtures', 'ser
 const stubbornFixturePath = path.join(__dirname, '..', 'benchmarks', 'fixtures', 'stubborn-server.js')
 const udpFixturePath = path.join(__dirname, '..', 'benchmarks', 'fixtures', 'udp-server.js')
 
+function runKp(args) {
+  return execFileSync(process.execPath, [kpWrapperPath, ...args], { encoding: 'utf8' })
+}
 
 function startServer(fixturePath = tcpFixturePath) {
   return new Promise((resolve, reject) => {
@@ -274,7 +277,7 @@ test('kp --dry-run --json returns process info without killing', async (t) => {
 
   await waitForPid(port, child.pid)
 
-  const output = execFileSync(kpWrapperPath, [String(port), '--dry-run', '--json'], { encoding: 'utf8' })
+  const output = runKp([String(port), '--dry-run', '--json'])
   const payload = JSON.parse(output)
   assert.equal(payload.results.length, 1)
   assert.equal(payload.results[0].port, port)
@@ -293,7 +296,7 @@ test('kp --json prints kill results', async (t) => {
 
   await waitForPid(port, child.pid)
   const exitPromise = waitForExit(child)
-  const output = execFileSync(kpWrapperPath, [String(port), '--json'], { encoding: 'utf8' })
+  const output = runKp([String(port), '--json'])
   const payload = JSON.parse(output)
   assert.equal(payload.results.length, 1)
   assert.equal(payload.results[0].port, port)
@@ -313,7 +316,7 @@ test('kp --graceful escalates after the graceful timeout', async (t) => {
 
   await waitForPid(port, child.pid)
   const exitPromise = waitForExit(child)
-  execFileSync(kpWrapperPath, [String(port), '--graceful', '--graceful-timeout', '50'], { encoding: 'utf8' })
+  runKp([String(port), '--graceful', '--graceful-timeout', '50'])
 
   const exit = await exitPromise
   assertForcefulExit(exit)
