@@ -98,6 +98,7 @@ Current bundled prebuilds:
 
 - `native/prebuilds/darwin-arm64/`
 - `native/prebuilds/darwin-x64/`
+- `native/prebuilds/linux-x64-gnu/`
 
 Target prebuild names:
 
@@ -128,6 +129,19 @@ RUSTC=$(rustup which rustc --toolchain stable) \
   --target x86_64-apple-darwin
 cp native/target/x86_64-apple-darwin/release/kp-rs native/prebuilds/darwin-x64/kp-rs
 strip -x native/prebuilds/darwin-x64/kp-rs
+```
+
+To refresh Linux x64 GNU from any Docker host:
+
+```sh
+mkdir -p native/prebuilds/linux-x64-gnu
+docker run --rm --platform linux/amd64 \
+  -v "$PWD":/work -w /work rust:1.91.1-slim-bullseye \
+  sh -lc 'export PATH=/usr/local/cargo/bin:$PATH; \
+    cargo build --release --manifest-path native/Cargo.toml && \
+    cp native/target/release/kp-rs native/prebuilds/linux-x64-gnu/kp-rs && \
+    strip native/prebuilds/linux-x64-gnu/kp-rs && \
+    chmod 755 native/prebuilds/linux-x64-gnu/kp-rs'
 ```
 
 ## Release
