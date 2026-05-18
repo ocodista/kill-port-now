@@ -1,4 +1,6 @@
-![kill-port-now logo](https://raw.githubusercontent.com/ocodista/kill-port-now/main/logo.png)
+<p align="center">
+  <img src="https://raw.githubusercontent.com/ocodista/kill-port-now/main/logo.png" alt="kill-port-now logo" />
+</p>
 
 # kill-port-now
 
