@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/ocodista/kill-port-now/main/logo.png" alt="kill-port-now logo" />
+  <img src="./logo.png" alt="kill-port-now logo" />
 </p>
 
 # kill-port-now
