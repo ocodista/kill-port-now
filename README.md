@@ -14,6 +14,12 @@ Free a local port in milliseconds.
 npm i -g kill-port-now
 ```
 
+Or run it without installing:
+
+```sh
+npx kill-port-now 3000
+```
+
 Node.js 18+ is required for the package API.
 
 The package does not run `preinstall`, `install`, or `postinstall` scripts. The `kp` launcher selects the bundled native binary at runtime. If a release is missing the native binary for your platform, it fails loudly instead of falling back to shell tools.
